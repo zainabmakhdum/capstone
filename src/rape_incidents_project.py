@@ -734,3 +734,321 @@ merged_offenders['age_num'] = merged_offenders['age_num'].fillna(merged_offender
 
 """Now, we can see that there are no missing values in this dataset."""
 print(merged_offenders.isna().sum())
+
+"""Exploratory Data Analysis"""
+
+"""Question One:
+Are there disparities between the number of arrestees and the number of victims as well as the number of
+sex offenses completed compared to the number of sex offenses attempted?"""
+
+# extracting relevant data
+# getting total no of arrestees vs victims
+total_arrestees = sum(arrestee_age['arrestees'])
+total_victims = sum(victim_age['victims'])
+
+# finding total number of completed vs attempted sex offenses
+completed_status = attempt_complete_status.loc[attempt_complete_status['status'] == 'Number_of_Offenses_Completed',
+                                               'sex_offenses'].values[0]
+attempted_status = attempt_complete_status.loc[attempt_complete_status['status'] == 'Number_of_Offenses_Attempted',
+                                               'sex_offenses'].values[0]
+
+# creating color dicts for each plot
+vic_arr_color_dict = {'Arrestees': 'pink', 'Victims': 'palevioletred'}
+complete_attempt_color_dict = {'Attempted': 'thistle', 'Completed': 'plum'}
+
+# creating side by side bar plots
+# both are on the same scale so they'll have the same y-axis
+fig, axs = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
+
+# bar plot for victims vs. arrests
+sb.barplot(x=['Victims', 'Arrestees'], y=[total_victims, total_arrestees],
+           palette=vic_arr_color_dict, ax=axs[0])
+axs[0].set_title("Total Number of Victims vs. Arrests in 2022", fontsize=10)
+axs[0].set_xlabel("Category", fontsize=10)
+axs[0].set_ylabel("Count", fontsize=10)
+
+# bar plot for completed vs. attempted sex offenses
+sb.barplot(x=['Completed', 'Attempted'], y=[completed_status, attempted_status],
+           palette=complete_attempt_color_dict, ax=axs[1])
+axs[1].set_title("Total Number of Completed vs. Attempted (Not Completed) Sex Offenses in 2022", fontsize=10)
+axs[1].set_xlabel("Status", fontsize=10)
+
+plt.tight_layout()
+plt.show()
+
+"""Question Two:
+How do rape rates differ across different states, cities, and towns in 2022?"""
+
+# adding a new column for per capita sex offenses
+offense_by_state['per_capita_sex_off'] = offense_by_state['sex_offenses'] / offense_by_state['population_covered']
+
+fig = px.choropleth(offense_by_state,
+                    locations="Code",
+                    locationmode="USA-states",
+                    color="per_capita_sex_off",
+                    hover_name="state",
+                    hover_data=["population_covered", "per_capita_sex_off", "sex_offenses"],
+                    title="Rape Rates Per Capita Across States in 2022",
+                    color_continuous_scale="magenta",
+                    labels={'per_capita_sex_off': 'Sex Offenses Per Capita',
+                           'population_covered' : 'Population Covered',
+                           'sex_offenses' : 'Sex Offenses'},
+                    scope="usa"
+                   )
+fig.show()
+
+# getting coordinates for each city
+city_details = df_dict["uscities.csv"]
+
+# keeping relevant cols
+selected_city_details_cols = ['city', 'state_id', 'state_name', 'county_name', 'lat', 'lng']
+city_details = city_details[selected_city_details_cols]
+
+# merging offense_by_city and city_details on city and state-code
+cities_loc = pd.merge(offense_by_city, city_details[['city', 'state_id', 'county_name', 'lat', 'lng']],
+                      left_on=['city', 'Code'], right_on=['city', 'state_id'], how='left')
+
+# removing repeated cols
+cities_loc.drop(['state_id'], axis=1, inplace=True)
+cities_loc.rename(columns={'state_id': 'state_id'}, inplace=True)
+
+# removing duplicates
+cities_loc = cities_loc.drop_duplicates()
+
+# removing missing vals since we don't have coordinates for 1900+ cities
+cities_loc_cleaned = cities_loc.dropna()
+
+# adding a new column for per capita sex offenses
+cities_loc_cleaned['per_capita_sex_off_cities'] = cities_loc_cleaned['rape'] / cities_loc_cleaned['population']
+
+# Mapbox token
+mapbox_token = "pk.eyJ1IjoiemFpbmFiLW1hay0wMSIsImEiOiJjbHNsamdtd2UwYjRjMnFsOTFhM2hxYTc0In0.AQL0zU0Ie-SCfU2kwoD1pQ"
+px.set_mapbox_access_token(mapbox_token)
+
+# setting parameters for plot
+fig = px.scatter_mapbox(cities_loc_cleaned, lat="lat", lon="lng",
+                        color="per_capita_sex_off_cities",
+                        size="per_capita_sex_off_cities",
+                        hover_data=["Code", "city", "county_name"],
+                        color_continuous_scale=px.colors.sequential.Magenta, size_max=15, zoom=2.5,
+                       labels={'per_capita_sex_off_cities': 'Sex Offenses By City (per capita)'})
+
+fig.update_layout(mapbox_style="open-street-map")
+fig.show()
+
+"""Question Three:
+How do rape rates change over time on a national level between 2012-2022
+and throughout the day in 2022?"""
+
+# plot for national rape trend (2012-2022)
+plt.figure(figsize=(10, 5))
+
+# Plotting the line plot
+plt.plot(national_rape_trend['years'], national_rape_trend['rape_incidents'],
+         color='cornflowerblue', label='Rape Incidents')
+
+plt.xlabel('Time', fontsize=10)
+plt.ylabel('Number of Rape Incidents', fontsize=10)
+plt.title('Number of Rape Incidents In The United States (2012-2022)', fontsize=10)
+plt.xticks(national_rape_trend['years'], fontsize=10)
+plt.yticks(fontsize=10)
+plt.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+
+# plot for rape rates throughout the day
+# removing 'Unknown Time of Day' obs
+offenses_time = offenses_time[offenses_time['time'] != 'Unknown Time of Day']
+
+# extract the part before '-'
+offenses_time['time'] = offenses_time['time'].str.extract(r'([\d:]+ [apm.]+)')[0]
+
+# replace values in rows 0 and 12
+offenses_time.loc[0, 'time'] = '12 a.m.'
+offenses_time.loc[12, 'time'] = '12 p.m.'
+
+
+plt.figure(figsize=(10, 5))
+
+# each time is between the specified time until 1min before the end of the hour e.g. 11:59pm
+plt.plot(offenses_time['time'], offenses_time['sex_offenses'],
+         color='orchid', label='Sex Offenses')
+
+plt.xlabel('Time', fontsize=10)
+plt.ylabel('Number of Sex Offenses', fontsize=10)
+plt.title('Time Periods For Sex Offenses Throughout The Day (2022)', fontsize=10)
+plt.xticks(rotation=45, fontsize=10)
+plt.yticks(fontsize=10)
+plt.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+
+"""Question Four"
+How do the demographics differ for the victims and the offenders?"""
+
+# combining age of victims and arrestees
+vic_arr_df = victim_age[['age', 'victims']].copy()
+vic_arr_df['arrestees'] = arrestee_age['arrestees']
+
+# creating a stacked bar chart with 'Victims' and 'Arrestees' on the x-axis
+sb.barplot(x='victims', y='age', data=vic_arr_df, color='indianred', label='Victims')
+sb.barplot(x='arrestees', y='age', data=vic_arr_df, color='mistyrose', label='Arrestees')
+
+plt.title("Number of Rape Victims and Arrestees by Age in 2022", fontsize = 10)
+plt.xlabel("Count", fontsize = 10)
+plt.ylabel("Age", fontsize = 10)
+plt.legend()
+plt.show()
+
+# combining victims and arrestees by race
+vic_arr_race = victim_race[['race', 'victims']].copy()
+vic_arr_race['arrestees'] = arrestee_race['arrestees']
+
+# combining victims and arrestees by sex
+vic_arr_sex = victim_sex[['sex', 'victims']].copy()
+vic_arr_sex['arrestees'] = arrestee_sex['arrestees']
+
+# unknown_sex obs did not exist in arrestee_sex column so we'll replace NaN with 0
+vic_arr_sex['arrestees'] = vic_arr_sex['arrestees'].fillna(0)
+vic_arr_sex = change_datatype(vic_arr_sex, 'arrestees', int)
+
+# creating heatmap for victims and arrestees by Race
+# creating dict to modify names in race col
+race_dict = {
+    'White': 'White',
+    'Black_or__African__American': 'Black/African American',
+    'American__Indian_or_Alaska_Native': 'American Indian/Alaska Native',
+    'Asian': 'Asian',
+    'Native__Hawaiian_or_Other_Pacific__Islander': 'Native Hawaiian/Pacific Islander',
+    'Unknown_Race': 'Unknown'
+}
+
+# replacing race names with names in race dictionary
+vic_arr_race['race'] = vic_arr_race['race'].map(race_dict)
+
+# color palette using cubehelix_palette
+cubehelix_colors = sb.cubehelix_palette(as_cmap = True)
+
+# color palette using diverging_palette
+diverging_colors = sb.diverging_palette(145, 300, s=60, as_cmap=True)
+
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+
+sb.heatmap(vic_arr_race.pivot_table(index='race', values=['victims', 'arrestees'],
+                                    aggfunc='sum'),
+            annot=True, fmt='g', cmap=cubehelix_colors,
+           cbar_kws={'label': 'Count'})
+
+plt.title('Heatmap of Victims and Arrestees by Race', fontsize = 10)
+plt.xlabel('Category', fontsize = 10)
+plt.ylabel('Race', fontsize = 10)
+
+
+
+# adjusting space between subplots to avoid overlapping
+plt.subplots_adjust(wspace=0.5)
+
+# creating the second heatmap for victims and arrestees by Sex
+plt.subplot(1, 2, 2)
+
+# creating heatmap for victims and arrestees by Sex
+# creating dict to modify names in sex col
+sex_dict = {
+    'Male': 'Male',
+    'Female': 'Female',
+    'Unknown_Sex': 'Unknown Sex'
+}
+
+# replacing race names with names in sex dictionary
+vic_arr_sex['sex'] = vic_arr_sex['sex'].map(sex_dict)
+
+sb.heatmap(vic_arr_sex.pivot_table(index='sex', values=['victims', 'arrestees'],
+                                    aggfunc='sum'),
+            annot=True, fmt='g', cmap=cubehelix_colors,
+           cbar_kws={'label': 'Count'})
+
+plt.title('Heatmap of Victims and Arrestees by Sex', fontsize = 10)
+plt.xlabel('Category', fontsize = 10)
+plt.ylabel('Sex', fontsize = 10)
+
+plt.show()
+
+"""Question Five:
+Does a relationship exist between the victims and offenders?"""
+
+# creating dict to modify relationships in relationship col
+rel_dict = {
+    'family_member': 'Family Member',
+    'family_member_and_other': 'Family Member and Other',
+    'ktv_and_other': 'Known To Victim and Other',
+    'other': 'Other',
+    'stranger': 'Stranger'
+}
+
+# applying dict to relationship column through .map()
+vic_offen_relationship['relationship'] = vic_offen_relationship['relationship'].map(rel_dict)
+
+plt.figure(figsize=(9, 6))
+
+# color selection
+custom_colors = ['mediumorchid', 'lavender', 'lightsteelblue', 'steelblue', 'mediumpurple']
+
+# creating pie chart - including adding percentages and changing distances
+wedges, texts, autotexts = plt.pie(vic_offen_relationship['sex_offenses'],
+        labels=vic_offen_relationship['relationship'],
+        autopct='%1.2f%%',
+        startangle=90, colors=custom_colors,
+        wedgeprops=dict(width=0.4, edgecolor='white'), textprops={'fontsize': 10},
+        labeldistance=1.1, pctdistance=0.40)
+
+plt.title('Relationship Between Victims and Offenders (2022)', fontsize=10)
+
+# adding legend
+plt.legend(wedges, vic_offen_relationship['relationship'], title="Relationship",
+           loc="right", bbox_to_anchor=(1, 0, 0.5, 1))
+
+plt.show()
+
+"""Question Six:
+What specific locations (home, university, office etc.) are hotspots for
+higher rape incidents/sex offenses?"""
+
+# pip install wordcloud
+
+# creating dict for specific locations + freq of sex offenses in each location
+wordcloud_loc_dict = crime_location.set_index('location')['sex_offenses'].to_dict()
+
+# creating wordcloud
+wordcloud_loc = WordCloud(width=1000,
+                          height=800,
+                          background_color='white',
+                          color_func=lambda *args, **kwargs: "darkmagenta",
+                          max_words=None,  
+                          relative_scaling=0.2,  
+                          min_font_size = 10).generate_from_frequencies(wordcloud_loc_dict)
+
+plt.figure(figsize=(10, 7), facecolor = None)
+plt.imshow(wordcloud_loc, interpolation='bilinear')
+plt.axis('off')
+plt.title('Locations of Sex Offenses Committed in 2022', fontsize=10)
+plt.tight_layout(pad = 4)
+plt.show()
+
+"""Case Study: Sex Offense Incidents Seasonal Trends in New York City (NYC)"""
+# pip install calplot
+import calplot
+
+# creating new df and grouping by date and count of sex offenses per date
+sex_off_date_vals = merged_offenders.groupby(['incident_date']).size().reset_index(name='sex_offenses_count')
+
+# setting the incident_date column as index
+sex_off_date_vals.set_index('incident_date', inplace=True)
+
+# calendar heatmap using calplot
+calplot.calplot(sex_off_date_vals['sex_offenses_count'], cmap='PuRd', colorbar=True)
+
+plt.title('Number of Sex Offense Incidents in NYC for 2022')
+plt.show()
