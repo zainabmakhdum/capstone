@@ -54,7 +54,6 @@ files = [
     "Crimes_Against_Persons_Incidents_Offense_Category_by_Time_of_Day_2022.xlsx",
     "Number_of_Offenses_Completed_and_Attempted_by_Offense_Category_2022.xlsx",
     "National_Rape_Ten_Year_Trend.csv",
-    "NY_Rape_Ten_Year_Trend.csv",
     "NIBRS_OFFENSE_TYPE.csv",
     "NIBRS_OFFENDER.csv",
     "NIBRS_OFFENSE.csv",
@@ -518,7 +517,6 @@ national_rape_trend = national_rape_trend.head(1)
 # changing the value of row one in 'Years' column to 'rape_incidents'
 national_rape_trend.loc[0, 'Years'] = 'rape_incidents'
 
-
 # transposing and resetting index
 national_rape_trend = national_rape_trend.T.reset_index()
     
@@ -611,3 +609,128 @@ report_date_flag_counts = merged_offenders['report_date_flag'].value_counts()
 # removing rows where report_date_flag is 't: 9 rows total
 merged_offenders = merged_offenders[merged_offenders['report_date_flag'] != 't']
 merged_offenders.head()
+
+"""Data Processing/Cleaning"""
+
+# putting all datasets in a dictionary to access later
+
+all_datasets = {
+    'offense_by_state': offense_by_state,
+    'vic_offen_relationship': vic_offen_relationship,
+    'offense_by_city': offense_by_city,
+    'crime_location': crime_location,
+    'victim_age': victim_age,
+    'victim_race': victim_race,
+    'victim_sex': victim_sex,
+    'arrestee_age': arrestee_age,
+    'arrestee_race': arrestee_race,
+    'arrestee_sex': arrestee_sex,
+    'offenses_time': offenses_time,
+    'national_rape_trend': national_rape_trend,
+    'merged_offenders': merged_offenders,
+    'attempt_complete_status': attempt_complete_status
+}
+
+# Identifying and Changing Datatypes
+for dataset_name, dataset in all_datasets.items():
+    print("Dataset:", dataset_name)
+    print(df_info(dataset))
+    print("\n" + "="*50 + "\n")
+
+
+def change_datatype(data_frame, col_name, modified_datatype):
+    """
+    Changeing the datatype of a column in a a specific dataframe.
+    """
+    data_frame[col_name] = data_frame[col_name].astype(modified_datatype)
+    return data_frame
+
+
+offense_by_state = change_datatype(offense_by_state, 'population_covered', int)
+offense_by_state = change_datatype(offense_by_state, 'sex_offenses', int)
+vic_offen_relationship = change_datatype(vic_offen_relationship, 'sex_offenses', int)
+
+offense_by_city = change_datatype(offense_by_city, 'population', int)
+offense_by_city = change_datatype(offense_by_city, 'rape', int)
+
+crime_location = change_datatype(crime_location, 'sex_offenses', int)
+
+attempt_complete_status = change_datatype(attempt_complete_status, 'sex_offenses', int)
+
+victim_age = change_datatype(victim_age, 'victims', int)
+victim_race = change_datatype(victim_race, 'victims', int)
+victim_sex = change_datatype(victim_sex, 'victims', int)
+
+arrestee_age = change_datatype(arrestee_age, 'arrestees', int)
+arrestee_race = change_datatype(arrestee_race, 'arrestees', int)
+arrestee_sex = change_datatype(arrestee_sex, 'arrestees', int)
+
+offenses_time = change_datatype(offenses_time, 'sex_offenses', int)
+
+national_rape_trend = change_datatype(national_rape_trend, 'rape_incidents', int)
+national_rape_trend = change_datatype(national_rape_trend, 'years', int)
+
+merged_offenders = change_datatype(merged_offenders, 'offender_id', object)
+merged_offenders = change_datatype(merged_offenders, 'incident_id', object)
+
+for dataset_name, dataset in all_datasets.items():
+    print("Dataset:", dataset_name)
+    print(df_info(dataset))
+    print("\n" + "="*50 + "\n")
+
+"""Identifying Missing Values"""
+
+"""
+    As shown below - no missing values found for any variables in any of the datasets with the exception of
+    age_num column where the missing values are shown as 'NS'. Therefore, first, we will redefine 'NS'
+    as NaN and then change the dtype of this column to numeric i.e., float. Then, we will examine if there
+    are outliers present. If the presence of outliers is detected, then the missing values will be
+    replaced by the median, otherwise the mean.
+"""
+
+# missing values as 'NS' convert them to NaN and impute them
+merged_offenders['age_num'] = merged_offenders['age_num'].replace('NS', np.nan)
+
+# detecting missing values
+for dataset_name, dataset in all_datasets.items():
+    print("Dataset:", dataset_name)
+    print("Total Missing Values:", missing_values(dataset))
+    print("-"*50)
+
+"""Now, we can see that there are 169 missing values in the merged_offenders df.
+Therefore, we'll take a closer look."""
+
+merged_offenders.isna().sum()
+
+# changing dtype from object to float to visualize distribution of age
+merged_offenders = change_datatype(merged_offenders, 'age_num', float)
+
+
+def boxplot_visualize(data_frame, col_name):
+    """
+    Createing a boxplot for a specific column in a dataframe to examine distributions.
+    """
+    fig = px.box(data_frame,
+                 y = col_name,
+                 title = f'Boxplot for {col_name}',
+                 labels = {col_name: col_name})
+    
+    fig.update_layout(
+        title=dict(font=dict(size=14)),
+        height = 400,
+        width = 400
+    )
+    
+    fig.show()
+
+
+boxplot_visualize(merged_offenders, 'age_num')
+
+"""Since there are outliers present, we want to replace the missing
+values in this column with the median."""
+
+# replacing the missing values with the median for age num column
+merged_offenders['age_num'] = merged_offenders['age_num'].fillna(merged_offenders['age_num'].median())
+
+"""Now, we can see that there are no missing values in this dataset."""
+print(merged_offenders.isna().sum())
