@@ -7,6 +7,9 @@ import seaborn as sb
 from wordcloud import WordCloud
 import os
 
+import requests
+from io import StringIO
+
 from sklearn.preprocessing import StandardScaler
 
 # file directory path 
@@ -62,7 +65,8 @@ files = [
     "NIBRS_incident.csv",
     "NIBRS_LOCATION_TYPE.csv",
     "NIBRS_WEAPON_TYPE.csv",
-    "NIBRS_WEAPON.csv"
+    "NIBRS_WEAPON.csv",
+    "Table_10_Offenses_Known_to_Law_Enforcement_by_State_by_Metropolitan_and_Nonmetropolitan_Counties_2022.xlsx"
 ]
 
 # empty dict to store dfs
@@ -110,6 +114,130 @@ code = {'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'Cal
 
 offense_by_state['Code'] = offense_by_state['state'].map(code)
 offense_by_state.head()
+
+
+"""Offense by county data"""
+# offenses by county
+offense_by_county = df_dict['Table_10_Offenses_Known_to_Law_Enforcement_by_State_by_Metropolitan_and_Nonmetropolitan_Counties_2022.xlsx']
+
+# removing the first two rows
+offense_by_county = offense_by_county.iloc[3:, :]
+
+# making the first row the column headers
+offense_by_county.columns = offense_by_county.iloc[0, :]
+
+# removing the first row
+offense_by_county = offense_by_county.iloc[1:, :]
+
+# removing the last two rows
+offense_by_county = offense_by_county.iloc[:-2, :]
+
+# keeping relevant cols
+selected_county_cols = ['State', 'County', 'Rape']
+offense_by_county = offense_by_county[selected_county_cols]
+
+# filling the missing values for state based on most recent non-NaN value
+offense_by_county['State'] = offense_by_county['State'].fillna(method='ffill')
+
+# removing county specifications + whitespace from state column
+offense_by_county['State'] = offense_by_county['State'].str.replace('- Metropolitan Counties', '').str.replace('- Nonmetropolitan Counties', '').str.strip()
+
+# converting to lower case and snake case by calling on fucntion
+convert_cols_to_lower_and_snake_case(offense_by_county)
+
+# converting the state col to title format
+offense_by_county['state'] = offense_by_county['state'].str.title()
+
+# removing numbers i.e., 2 at the end of some state names
+offense_by_county['state'] = offense_by_county['state'].str.rstrip('2').str.strip()
+
+# adding state code column
+offense_by_county['Code'] = offense_by_county['state'].map(code).str.strip()
+
+# changing dtype of rape col from object to int
+offense_by_county['rape'] = offense_by_county['rape'].astype(int)  # or float
+
+"""Getting FIPS codes for counties and states"""
+# making request to access link for FIPS codes .txt file
+response = requests.get("https://transition.fcc.gov/oet/info/maps/census/fips/fips.txt")
+
+# skipping first few irrelevant lines 
+lines = response.text.split('\n')[7:]
+
+# selecting lines that contain FIPS codes for states only
+# this is the first dataframe
+lines = lines[7:60]
+n_lines = '\n'.join(lines)
+state_fips = pd.read_fwf(StringIO(n_lines), header=0)
+
+# removing first row
+state_fips = state_fips.iloc[1:]
+
+# resetting index
+state_fips = state_fips.reset_index(drop=True)
+
+# changing col names manually
+state_fips = state_fips.rename(columns={'FIPS code': 'state_fips_code', 'name': 'state'})
+
+# converting the state col to title format
+state_fips['state'] = state_fips['state'].str.title()
+
+# selecting lines that contain FIPS codes for counties only
+# this is the second dataframe
+county_lines = response.text.split('\n')[70:]
+n_county_lines = '\n'.join(county_lines)
+county_fips = pd.read_fwf(StringIO(n_county_lines), header=0)
+
+# removing first row
+county_fips = county_fips.iloc[1:]
+
+# resetting index
+county_fips = county_fips.reset_index(drop=True)
+
+# changing col names manually
+county_fips = county_fips.rename(columns={'FIPS code': 'county_fips_code', 'name': 'county'})
+
+# creating state fips code col based on the first two digits of county fips
+county_fips['state_fips_code'] = county_fips['county_fips_code'].astype(str).str[:2]
+
+# merging state_fips with county_fips based on state_fips_code
+county_fips = pd.merge(county_fips, state_fips[['state_fips_code', 'state']], on='state_fips_code', how='left')
+
+
+# removing state names from county column based on county_fips_code
+county_fips = county_fips[~county_fips['county_fips_code'].str.endswith('000')]
+
+# aggregating values from county and state cols in a new col
+county_fips['county_state_agg'] = county_fips['county'] + ', ' + county_fips['state']
+
+"""Merging fips codes with offense_by_county df"""
+# getting unique vals for state fips
+state_fips_unq = county_fips[['state', 'state_fips_code']].drop_duplicates()
+
+# merging offense_by_county unique state fips
+offense_by_county = offense_by_county.merge(state_fips_unq, 
+                                            how='left', 
+                                            left_on=['state'], 
+                                            right_on=['state'])
+
+# adding 'County' after county name for consistency with county_fips df
+offense_by_county['county'] = offense_by_county['county'] + ' County'
+
+
+# removing words after the 1st appearance of 'County'
+offense_by_county['county'] = offense_by_county['county'].str.split('County').str[0].str.strip() + ' County'
+
+# aggregating values from county and state cols in a new col
+offense_by_county['county_state_agg'] = offense_by_county['county'] + ', ' + offense_by_county['state']
+
+# merging county_fips_code with offense_by_county df based on county_state_agg
+offense_by_county = offense_by_county.merge(county_fips[['county_state_agg', 'county_fips_code']], 
+                                            how='left', 
+                                            on='county_state_agg')
+
+# dropping missing values due to discrepency in county names
+offense_by_county = offense_by_county.dropna()
+
 
 # relationship between victim and offender 
 vic_offen_relationship = df_dict['Relationship_of_Victims_to_Offenders_by_Offense_Category_2022.xlsx']
@@ -843,6 +971,8 @@ fig = px.choropleth(offense_by_state,
                            'sex_offenses' : 'Sex Offenses'},
                     scope="usa"
                    )
+# setting county border color and width
+fig.update_traces(marker_line_color='white', marker_line_width=1.0)
 fig.show()
 
 # getting coordinates for each city
@@ -883,6 +1013,52 @@ fig = px.scatter_mapbox(cities_loc_cleaned, lat="lat", lon="lng",
 
 fig.update_layout(mapbox_style="open-street-map")
 fig.show()
+
+# top 10 counties by rape cases
+top_counties = offense_by_county.sort_values(by='rape', ascending=False).head(10)
+
+# adding state names to the counties
+top_counties['county_state'] = top_counties['county'] + ' - ' + top_counties['state']
+
+plt.figure(figsize=(6, 4))
+sb.barplot(x='rape', y='county_state', data=top_counties, palette='BuPu_r')
+plt.xlabel('Reported Rape Cases')
+plt.ylabel('County')
+plt.title('Top 10 Counties with the Highest Reported Rape Cases in 2022')
+plt.show()
+
+# plotting rape incidents by counties 
+from urllib.request import urlopen
+import json
+with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
+    counties = json.load(response)
+import plotly.graph_objects as go
+
+"""The data shown in this table do not reflect county totals but are the number of 
+offenses reported by the sheriff's office or county police department."""
+
+# creating copy for log transformation
+county_offenses_clean = offense_by_county.copy()
+
+# applying log(1 + x) since 'rape' col contains '0' vals
+county_offenses_clean['log_rape'] = np.log1p(county_offenses_clean['rape'])
+
+choro_counties_fig = px.choropleth(county_offenses_clean,
+    geojson=counties, locations='county_fips_code',
+    color='log_rape', color_continuous_scale='dense',
+    hover_data=['state', 'county', 'rape'],
+    title="Distribution of Reported Rape Cases Across U.S. Counties in 2022",
+    labels={'log_rape': 'Rape Cases (log scale)'},
+    scope='usa'
+)
+
+# adjusting title placement to make it visible
+choro_counties_fig.update_layout(title_x=0.5, title_y=0.90)
+
+# setting county border color and width
+choro_counties_fig.update_traces(marker_line_color='white', marker_line_width=1.0)
+
+choro_counties_fig.show()
 
 """Question Three:
 How do rape rates change over time on a national level between 2012-2022
