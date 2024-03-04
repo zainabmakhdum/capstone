@@ -12,6 +12,20 @@ from io import StringIO
 
 from sklearn.preprocessing import StandardScaler
 
+import sklearn.linear_model as skl_lm
+from sklearn.metrics import confusion_matrix, classification_report, precision_score
+from sklearn import preprocessing
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from sklearn.model_selection import cross_val_score
+
+from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, confusion_matrix, roc_auc_score
+
 # file directory path 
 # changing file path
 os.chdir('/Users/zainabmakhdum/Downloads/capstone/data')
@@ -1282,6 +1296,8 @@ plt.show()
 # standardizing variables
 # keeping only relevant features and target variable
 
+from sklearn.preprocessing import StandardScaler
+
 # removing irrelevant columns from the dataset
 irrelevant_cols_mod = ['incident_id', 'offense_id', 'location_id', 'offense_category_name', 'incident_date']
 mod_offenders_df = merged_offenders.drop(columns=irrelevant_cols_mod)
@@ -1318,3 +1334,295 @@ scaler = StandardScaler()
 age_std = ['age_num']
 mod_offenders_df[age_std] = scaler.fit_transform(mod_offenders_df[age_std])
 mod_offenders_df.head()
+
+# checking for class imbalance
+class_dist = mod_offenders_df['attempt_complete_flag'].value_counts()
+class_dist
+
+# pip install imbalanced-learn
+# pip install -U scikit-learn imbalanced-learn
+
+from imblearn.over_sampling import SMOTE
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.pipeline import Pipeline
+
+# seperating target variable and features
+X = mod_offenders_df.drop('attempt_complete_flag', axis=1)
+y = mod_offenders_df['attempt_complete_flag']
+
+# using SMOTE
+pipeline = Pipeline([
+    ('over', SMOTE(sampling_strategy='auto')),
+])
+
+# fitting the SMOTE pipeline on the data
+X, y = pipeline.fit_resample(X, y)
+
+# examining class imbalance after applying SMOTE
+class_dist_res = pd.Series(y).value_counts()
+class_dist_res
+
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+# checking for multicolinearity by calculating VIF
+vif_vals = pd.DataFrame()
+vif_vals["Variable"] = X.columns
+vif_vals["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+vif_vals[vif_vals["VIF"] > 10]
+
+# removing personal weapons as a feture due to VIF >10
+X = X.drop(columns=["weapon_name_Personal Weapons"])
+X
+
+# training, validation, and test set using the ratio 5 : 1 : 1
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7142857143, random_state=42)
+X_valid, X_test, y_valid, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+
+print("Training set size:", len(X_train))
+print("Validation set size:", len(X_valid))
+print("Test set size:", len(X_test))
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import roc_auc_score
+
+#decision tree modelling
+tree_clf = DecisionTreeClassifier(random_state=42, max_depth = 9)
+tree_clf.fit(X_train, y_train)
+y_pred_tree = tree_clf.predict(X_valid)
+
+# apply 5 fold cross-valid to DT model
+dt_cross_val_scores = cross_val_score(tree_clf, X_train, y_train, cv=5)
+
+# getting DT model performance
+dt_mean_accuracy = dt_cross_val_scores.mean()
+print("Decision Tree Model Performance:")
+print("========================================")
+print("Accuracy:", round(accuracy_score(y_valid, y_pred_tree),4))
+print("Precision:", round(precision_score(y_valid, y_pred_tree),4))
+print("Recall:", round(recall_score(y_valid, y_pred_tree), 4))
+print("F1 Score:", round(f1_score(y_valid, y_pred_tree), 4))
+print("Cross Validation:", round(dt_mean_accuracy, 4))
+print("AUC-ROC Score:", round(roc_auc_score(y_valid, y_pred_tree), 4))
+print("========================================")
+
+# getting the confusion matrix for validation set for DT model
+cmDT = confusion_matrix(y_valid, y_pred_tree)
+
+plt.figure(figsize=(8, 6))
+sb.heatmap(cmDT, annot=True, fmt="d", cmap="PiYG", cbar=False, square=True,
+            xticklabels=["Sex Offense Completed", "Sex Offense Attempted"],
+            yticklabels=["Sex Offense Completed", "Sex Offense Attempted"])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix - Decision Tree')
+plt.show()
+
+# getting feature importance scores (top 10) from the decision tree model
+dt_feature_imp = pd.Series(tree_clf.feature_importances_, index = X_train.columns)
+top_10_dt = dt_feature_imp.nlargest(10)
+top_10_df_df = pd.DataFrame({'features': top_10_dt.index, 'importance_scores': top_10_dt.values})
+print(top_10_df_df)
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.ensemble import BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+
+rnd_clf = RandomForestClassifier(n_estimators=100, random_state=42)
+rnd_clf.fit(X_train, y_train)
+y_pred_rf = rnd_clf.predict(X_valid)
+cross_val_scores = cross_val_score(rnd_clf, X_train, y_train, cv=5)
+mean_accuracy = cross_val_scores.mean()
+print("Random Forest Model with Cross-Validation:")
+print("========================================")
+print("Accuracy:", round(accuracy_score(y_valid, y_pred_rf),4))
+print("Precision:", round(precision_score(y_valid, y_pred_rf),4))
+print("Recall:", round(recall_score(y_valid, y_pred_rf),4))
+print("F1 Score:", round(f1_score(y_valid, y_pred_rf),4))
+print("Cross Validation:", round(mean_accuracy, 4))
+print("AUC-ROC Score:", round(roc_auc_score(y_valid, y_pred_rf), 4))
+print("========================================")
+
+# getting the confusion matrix for validation set for RF model
+
+cm_RF = confusion_matrix(y_valid, y_pred_rf)
+
+plt.figure(figsize=(8, 6))
+sb.heatmap(cm_RF, annot=True, fmt="d", cmap="cool", cbar=False, square=True,
+            xticklabels=["Sex Offense Completed", "Sex Offense Attempted"],
+            yticklabels=["Sex Offense Completed", "Sex Offense Attempted"])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix - Random Forest')
+plt.show()
+
+# getting feature importance scores (top 10) from the random forest model
+rf_feature_imp = pd.Series(rnd_clf.feature_importances_, index = X_train.columns)
+top_10_rf = rf_feature_imp.nlargest(10)
+top_10_rf_df = pd.DataFrame({'feature': top_10_rf.index, 'importance_score': top_10_rf.values})
+print(top_10_rf_df)
+
+from sklearn.linear_model import LogisticRegression
+
+# applying logistic regression
+logistic_model = LogisticRegression(max_iter=3000, random_state=42, penalty='l2')
+logistic_model.fit(X_train, y_train)
+logreg_predictions = logistic_model.predict(X_valid)
+
+# apply 5 fold cross-valid to LogR model
+logR_cross_val_scores = cross_val_score(logistic_model, X_train, y_train, cv=5)
+
+# LogR model performance
+logR_mean_accuracy = logR_cross_val_scores.mean()
+print("Logistic Regression Model With Cross-Validation:")
+print("========================================")
+print("Accuracy:", round(accuracy_score(y_valid, logreg_predictions),4))
+print("Precision:", round(precision_score(y_valid, logreg_predictions),4))
+print("Recall:", round(recall_score(y_valid, logreg_predictions), 4))
+print("F1 Score:", round(f1_score(y_valid, logreg_predictions), 4))
+print("Cross Validation:", round(logR_mean_accuracy, 4))
+print("AUC-ROC Score:", round(roc_auc_score(y_valid, logreg_predictions), 4))
+print("========================================")
+
+
+# getting the confusion matrix for validation set for Log Reg model
+log_RF = confusion_matrix(y_valid, logreg_predictions)
+
+plt.figure(figsize=(8, 6))
+sb.heatmap(log_RF, annot=True, fmt="d", cmap="PRGn", cbar=False, square=True,
+            xticklabels=["Sex Offense Completed", "Sex Offense Attempted"],
+            yticklabels=["Sex Offense Completed", "Sex Offense Attempted"])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix - Logistic Regression')
+plt.show()
+
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn import datasets
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC
+
+# svm model
+# setting a linear svm model with cost = 1
+svm_clf = Pipeline([
+        ("scaler", StandardScaler()),
+        ("linear_svc", LinearSVC(C=1, random_state=42)),
+    ])
+svm_clf.fit(X_train, y_train)
+
+svm_y_pred_valid = svm_clf.predict(X_valid)
+
+
+# evaluating linear svm performance
+print("Linear SVM Performance (w/o hyperparameter tuning):")
+print("========================================")
+print("Accuracy:", accuracy_score(y_valid, svm_y_pred_valid))
+print("Precision:", precision_score(y_valid, svm_y_pred_valid))
+print("Recall:", recall_score(y_valid, svm_y_pred_valid))
+print("F1 Score:", f1_score(y_valid, svm_y_pred_valid))
+print("========================================")
+print(" ")
+print(" ")
+
+# hypertuning model parameters using RBF Kernel
+
+# values for cost and gamma
+gammas = [0.1, 5, 10]
+costs = [0.001, 1, 1000]
+
+# SVM classifiers using an RBF kernel
+print("SVM with Radial (RBF) Basis Kernel:")
+print("========================================")
+for gamma in gammas:
+    for cost in costs:
+        rbf_kernel_svm_clf = Pipeline([
+            ("scaler", StandardScaler()),
+            ("svm_clf", SVC(kernel="rbf", gamma=gamma,
+                            C=cost, random_state=42))])
+        rbf_kernel_svm_clf.fit(X_train, y_train)
+        y_pred_valid_svm = rbf_kernel_svm_clf.predict(X_valid)
+        accuracy = accuracy_score(y_valid, y_pred_valid_svm)
+        print('Gamma= {:<4} C= {:<7} Accuracy= {:.5f}'.format(gamma, cost, accuracy))
+print("========================================")
+
+"""since gamma=5 and cost = 1000 has the best accuracy score,
+we obtain further performance metrics for these parameters"""
+
+# fitting the optimal hyperparameter vals to the model
+best_svm_clf = Pipeline([
+    ("scaler", StandardScaler()),
+    ("svm_clf", SVC(kernel="rbf", gamma=5, C=1000, random_state=42))
+])
+
+best_svm_clf.fit(X_train, y_train)
+best_svm_y_pred_val = best_svm_clf.predict(X_valid)
+
+# performance eval of best svm model
+print(" ")
+print(" ")
+print("SVM Model with Radial (RBF) Basis Kernel and Hyperparameter Tuning:")
+print("========================================")
+print("Accuracy:", accuracy_score(y_valid, best_svm_y_pred_val))
+print("Precision:", precision_score(y_valid, best_svm_y_pred_val))
+print("Recall:", recall_score(y_valid, best_svm_y_pred_val))
+print("F1 Score:", f1_score(y_valid, best_svm_y_pred_val))
+print("========================================")
+
+# getting confusion matrix for best svm model
+svm_conf_matrix = confusion_matrix(y_valid, best_svm_y_pred_val)
+
+plt.figure(figsize=(8, 6))
+sb.heatmap(svm_conf_matrix, annot=True, fmt="d", cmap="PuBuGn", cbar=False, square=True,
+            xticklabels=["Sex Offense Completed", "Sex Offense Attempted"],
+            yticklabels=["Sex Offense Completed", "Sex Offense Attempted"])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix - SVM with RBF Kernel')
+plt.show()
+
+from sklearn.ensemble import VotingClassifier
+
+# re-identifying svm classifier b/c 'pipeline' is not accepted by voting classifier
+svm_clf_two = SVC(kernel="rbf", gamma=5, C=1000, probability=True, random_state=42)
+
+# creating a soft voting classifier
+voting_clf = VotingClassifier(estimators=[
+    ('decision_tree', tree_clf),
+    ('random_forest', rnd_clf),
+    ('logistic_regression', logistic_model),
+    ('svm', svm_clf_two)], voting='soft')
+
+# fitting ensemble on train set
+voting_clf.fit(X_train, y_train)
+
+# predicting on validation set
+y_pred_valid_ensemble = voting_clf.predict(X_valid)
+
+print("Ensemble Model Performance:")
+print("========================================")
+print("Accuracy:", accuracy_score(y_valid, y_pred_valid_ensemble))
+print("Precision:", precision_score(y_valid, y_pred_valid_ensemble))
+print("Recall:", recall_score(y_valid, y_pred_valid_ensemble))
+print("F1 Score:", f1_score(y_valid, y_pred_valid_ensemble))
+print("ROC AUC Score:", roc_auc_score(y_valid, y_pred_valid_ensemble))
+print("========================================")
+
+# confusion matrix for ensemble model
+ensemble_conf_matrix = confusion_matrix(y_valid, y_pred_valid_ensemble)
+
+plt.figure(figsize=(8, 6))
+sb.heatmap(ensemble_conf_matrix, annot=True, fmt="d", cmap="PuOr", cbar=False, square=True,
+            xticklabels=["Sex Offense Completed", "Sex Offense Attempted"],
+            yticklabels=["Sex Offense Completed", "Sex Offense Attempted"])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix - SVM with RBF Kernel')
+plt.show()
