@@ -943,8 +943,8 @@ attempted_status = attempt_complete_status.loc[attempt_complete_status['status']
                                                'sex_offenses'].values[0]
 
 # creating color dicts for each plot
-vic_arr_color_dict = {'Arrestees': 'pink', 'Victims': 'palevioletred'}
-complete_attempt_color_dict = {'Attempted': 'thistle', 'Completed': 'plum'}
+vic_arr_color_dict = {'Arrestees': 'lightblue', 'Victims': 'lightblue'}
+complete_attempt_color_dict = {'Attempted': 'plum', 'Completed': 'plum'}
 
 # creating side by side bar plots
 # both are on the same scale so they'll have the same y-axis
@@ -979,7 +979,7 @@ fig = px.choropleth(offense_by_state,
                     hover_name="state",
                     hover_data=["population_covered", "per_capita_sex_off", "sex_offenses"],
                     title="Rape Rates Per Capita Across States in 2022",
-                    color_continuous_scale="magenta",
+                    color_continuous_scale="dense",
                     labels={'per_capita_sex_off': 'Sex Offenses Per Capita',
                            'population_covered' : 'Population Covered',
                            'sex_offenses' : 'Sex Offenses'},
@@ -1062,7 +1062,7 @@ choro_counties_fig = px.choropleth(county_offenses_clean,
     color='log_rape', color_continuous_scale='dense',
     hover_data=['state', 'county', 'rape'],
     title="Distribution of Reported Rape Cases Across U.S. Counties in 2022",
-    labels={'log_rape': 'Rape Cases (log scale)'},
+    labels={'log_rape': 'Rape Cases (log scale: ln(1+x))'},
     scope='usa'
 )
 
@@ -1130,9 +1130,16 @@ How do the demographics differ for the victims and the offenders?"""
 vic_arr_df = victim_age[['age', 'victims']].copy()
 vic_arr_df['arrestees'] = arrestee_age['arrestees']
 
+# replacing missing values i.e., unknown_age
+vic_arr_df['age'].replace('unknown_age', np.nan, inplace=True)
+vic_arr_df['age'].fillna(vic_arr_df['age'].mode(dropna=True).iloc[0], inplace=True)
+
+# aggregating duplicated values created after replacing Nan with mode
+vic_arr_df = vic_arr_df.groupby('age').sum().reset_index()
+
 # creating a stacked bar chart with 'Victims' and 'Arrestees' on the x-axis
-sb.barplot(x='victims', y='age', data=vic_arr_df, color='indianred', label='Victims')
-sb.barplot(x='arrestees', y='age', data=vic_arr_df, color='mistyrose', label='Arrestees')
+sb.barplot(x='victims', y='age', data=vic_arr_df, color='thistle', label='Victims')
+sb.barplot(x='arrestees', y='age', data=vic_arr_df, color='steelblue', label='Arrestees')
 
 plt.title("Number of Rape Victims and Arrestees by Age in 2022", fontsize = 10)
 plt.xlabel("Count", fontsize = 10)
@@ -1152,15 +1159,28 @@ vic_arr_sex['arrestees'] = arrestee_sex['arrestees']
 vic_arr_sex['arrestees'] = vic_arr_sex['arrestees'].fillna(0)
 vic_arr_sex = change_datatype(vic_arr_sex, 'arrestees', int)
 
+# replacing missing values i.e., unknown race
+vic_arr_race['race'].replace('Unknown', np.nan, inplace=True)
+vic_arr_race['race'].fillna(vic_arr_race['race'].mode(dropna=True).iloc[0], inplace=True)
+
+# aggregating duplicated values created after replacing Nan with mode for vic_arr_race
+vic_arr_race = vic_arr_race.groupby('race').sum().reset_index()
+
+# replacing missing values i.e., unknown sex
+vic_arr_sex['sex'].replace('Unknown Sex', np.nan, inplace=True)
+vic_arr_sex['sex'].fillna(vic_arr_sex['sex'].mode(dropna=True).iloc[0], inplace=True)
+
+# aggregating duplicated values created after replacing Nan with mode for vic_arr_sex
+vic_arr_sex = vic_arr_sex.groupby('sex').sum().reset_index()
+
 # creating heatmap for victims and arrestees by Race
 # creating dict to modify names in race col
 race_dict = {
     'White': 'White',
-    'Black_or__African__American': 'Black/African American',
-    'American__Indian_or_Alaska_Native': 'American Indian/Alaska Native',
+    'Black_or__African__American': 'African American',
+    'American__Indian_or_Alaska_Native': 'American Indian',
     'Asian': 'Asian',
-    'Native__Hawaiian_or_Other_Pacific__Islander': 'Native Hawaiian/Pacific Islander',
-    'Unknown_Race': 'Unknown'
+    'Native__Hawaiian_or_Other_Pacific__Islander': 'Pacific Islander'
 }
 
 # replacing race names with names in race dictionary
@@ -1169,15 +1189,12 @@ vic_arr_race['race'] = vic_arr_race['race'].map(race_dict)
 # color palette using cubehelix_palette
 cubehelix_colors = sb.cubehelix_palette(as_cmap = True)
 
-# color palette using diverging_palette
-diverging_colors = sb.diverging_palette(145, 300, s=60, as_cmap=True)
-
 plt.figure(figsize=(10, 5))
 plt.subplot(1, 2, 1)
 
 sb.heatmap(vic_arr_race.pivot_table(index='race', values=['victims', 'arrestees'],
                                     aggfunc='sum'),
-            annot=True, fmt='g', cmap=cubehelix_colors,
+            annot=True, fmt='g', cmap='BuPu',
            cbar_kws={'label': 'Count'})
 
 plt.title('Heatmap of Victims and Arrestees by Race', fontsize = 10)
@@ -1196,8 +1213,7 @@ plt.subplot(1, 2, 2)
 # creating dict to modify names in sex col
 sex_dict = {
     'Male': 'Male',
-    'Female': 'Female',
-    'Unknown_Sex': 'Unknown Sex'
+    'Female': 'Female'
 }
 
 # replacing race names with names in sex dictionary
@@ -1205,13 +1221,13 @@ vic_arr_sex['sex'] = vic_arr_sex['sex'].map(sex_dict)
 
 sb.heatmap(vic_arr_sex.pivot_table(index='sex', values=['victims', 'arrestees'],
                                     aggfunc='sum'),
-            annot=True, fmt='g', cmap=cubehelix_colors,
+            annot=True, fmt='g', cmap='BuPu',
            cbar_kws={'label': 'Count'})
 
 plt.title('Heatmap of Victims and Arrestees by Sex', fontsize = 10)
 plt.xlabel('Category', fontsize = 10)
 plt.ylabel('Sex', fontsize = 10)
-
+#plt.savefig("q4b2-450.png")
 plt.show()
 
 """Question Five:
@@ -1232,7 +1248,7 @@ vic_offen_relationship['relationship'] = vic_offen_relationship['relationship'].
 plt.figure(figsize=(9, 6))
 
 # color selection
-custom_colors = ['mediumorchid', 'lavender', 'lightsteelblue', 'steelblue', 'mediumpurple']
+custom_colors = ['plum', 'lavender', 'lightsteelblue', 'steelblue', 'mediumpurple']
 
 # creating pie chart - including adding percentages and changing distances
 wedges, texts, autotexts = plt.pie(vic_offen_relationship['sex_offenses'],
@@ -1263,7 +1279,7 @@ wordcloud_loc_dict = crime_location.set_index('location')['sex_offenses'].to_dic
 wordcloud_loc = WordCloud(width=1000,
                           height=800,
                           background_color='white',
-                          color_func=lambda *args, **kwargs: "darkmagenta",
+                          color_func=lambda *args, **kwargs: "mediumslateblue",
                           max_words=None,  
                           relative_scaling=0.2,  
                           min_font_size = 10).generate_from_frequencies(wordcloud_loc_dict)
@@ -1275,7 +1291,7 @@ plt.title('Locations of Sex Offenses Committed in 2022', fontsize=10)
 plt.tight_layout(pad = 4)
 plt.show()
 
-"""Case Study: Sex Offense Incidents Seasonal Trends in New York City (NYC)"""
+"""Case Study: Sex Offense Incidents Seasonal Trends in New York State"""
 # pip install calplot
 import calplot
 
@@ -1288,7 +1304,7 @@ sex_off_date_vals.set_index('incident_date', inplace=True)
 # calendar heatmap using calplot
 calplot.calplot(sex_off_date_vals['sex_offenses_count'], cmap='PuRd', colorbar=True)
 
-plt.title('Number of Sex Offense Incidents in NYC for 2022')
+plt.title('Number of Sex Offense Incidents in NY State for 2022')
 plt.show()
 
 """Data Cleaning For Modelling"""
