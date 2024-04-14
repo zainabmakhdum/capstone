@@ -1292,11 +1292,15 @@ plt.tight_layout(pad = 4)
 plt.show()
 
 """Case Study: Sex Offense Incidents Seasonal Trends in New York State"""
+
 # pip install calplot
 import calplot
 
+# removing Jan 1st vals since these identify missing vals
+removed_na = merged_offenders[~((merged_offenders['incident_date'].dt.month == 1) & (merged_offenders['incident_date'].dt.day == 1))]
+
 # creating new df and grouping by date and count of sex offenses per date
-sex_off_date_vals = merged_offenders.groupby(['incident_date']).size().reset_index(name='sex_offenses_count')
+sex_off_date_vals = removed_na.groupby(['incident_date']).size().reset_index(name='sex_offenses_count')
 
 # setting the incident_date column as index
 sex_off_date_vals.set_index('incident_date', inplace=True)
@@ -1304,7 +1308,7 @@ sex_off_date_vals.set_index('incident_date', inplace=True)
 # calendar heatmap using calplot
 calplot.calplot(sex_off_date_vals['sex_offenses_count'], cmap='PuRd', colorbar=True)
 
-plt.title('Number of Sex Offense Incidents in NY State for 2022')
+#plt.title('Number of Sex Offense Incidents in NY State for 2022')
 plt.show()
 
 """Data Cleaning For Modelling"""
@@ -1536,7 +1540,6 @@ svm_clf.fit(X_train, y_train)
 
 svm_y_pred_valid = svm_clf.predict(X_valid)
 
-
 # evaluating linear svm performance
 print("Linear SVM Performance (w/o hyperparameter tuning):")
 print("========================================")
@@ -1549,7 +1552,6 @@ print(" ")
 print(" ")
 
 # hypertuning model parameters using RBF Kernel
-
 # values for cost and gamma
 gammas = [0.1, 5, 10]
 costs = [0.001, 1, 1000]
@@ -1572,14 +1574,17 @@ print("========================================")
 """since gamma=5 and cost = 1000 has the best accuracy score,
 we obtain further performance metrics for these parameters"""
 
-# fitting the optimal hyperparameter vals to the model
+# fitting the SVM model with a pipeline + scaling
 best_svm_clf = Pipeline([
     ("scaler", StandardScaler()),
-    ("svm_clf", SVC(kernel="rbf", gamma=5, C=1000, random_state=42))
+    ("svm_clf", SVC(kernel="rbf", gamma=5, C=1000, random_state=42, probability=True))
 ])
-
 best_svm_clf.fit(X_train, y_train)
+
 best_svm_y_pred_val = best_svm_clf.predict(X_valid)
+
+# getting decision scores for creating ROC curve later
+best_svm_decision_scores = best_svm_clf.decision_function(X_valid)
 
 # performance eval of best svm model
 print(" ")
@@ -1591,6 +1596,7 @@ print("Precision:", precision_score(y_valid, best_svm_y_pred_val))
 print("Recall:", recall_score(y_valid, best_svm_y_pred_val))
 print("F1 Score:", f1_score(y_valid, best_svm_y_pred_val))
 print("========================================")
+
 
 # getting confusion matrix for best svm model
 svm_conf_matrix = confusion_matrix(y_valid, best_svm_y_pred_val)
@@ -1604,6 +1610,45 @@ plt.ylabel('Actual')
 plt.title('Confusion Matrix - SVM with RBF Kernel')
 plt.show()
 
+# creating roc curve to examine model performance of each model individually
+from sklearn.metrics import roc_curve, roc_auc_score
+
+# calculating ROC and AUC for each of the 4 models
+
+# decision tree
+y_score_tree = tree_clf.predict_proba(X_valid)[:, 1]
+fpr_tree, tpr_tree, _ = roc_curve(y_valid, y_score_tree)
+roc_auc_tree = roc_auc_score(y_valid, y_score_tree)
+plt.plot(fpr_tree, tpr_tree, label=f'Decision Tree (AUC = {roc_auc_tree:.3f})', color="cornflowerblue")
+
+# Random Forest
+y_score_rf = rnd_clf.predict_proba(X_valid)[:, 1]
+fpr_rf, tpr_rf, _ = roc_curve(y_valid, y_score_rf)
+roc_auc_rf = roc_auc_score(y_valid, y_score_rf)
+plt.plot(fpr_rf, tpr_rf, label=f'Random Forest (AUC = {roc_auc_rf:.3f})', color="palevioletred")
+
+# Logistic Regression
+y_score_logreg = logistic_model.predict_proba(X_valid)[:, 1]
+fpr_logreg, tpr_logreg, _ = roc_curve(y_valid, y_score_logreg)
+roc_auc_logreg = roc_auc_score(y_valid, y_score_logreg)
+plt.plot(fpr_logreg, tpr_logreg, label=f'Logistic Regression (AUC = {roc_auc_logreg:.3f})', color="powderblue")
+
+# SVM
+fpr_svm, tpr_svm, _ = roc_curve(y_valid, best_svm_decision_scores)
+roc_auc_svm = roc_auc_score(y_valid, best_svm_decision_scores)
+plt.plot(fpr_svm, tpr_svm, label=f'SVM (AUC = {roc_auc_svm:.3f})', color="thistle")
+
+# plotting the ROC curve
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+#plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+# ensamble classifier
 from sklearn.ensemble import VotingClassifier
 
 # re-identifying svm classifier b/c 'pipeline' is not accepted by voting classifier
