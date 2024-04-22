@@ -283,42 +283,6 @@ convert_cols_to_lower_and_snake_case(vic_offen_relationship)
 vic_offen_relationship
 
 
-# offenses by city
-offense_by_city = df_dict["Table_8_Offenses_Known_to_Law_Enforcement_by_State_by_City_2022.xlsx"]
-
-# removing the first two rows
-offense_by_city = offense_by_city.iloc[2:, :]
-
-# making the first row the column headers
-offense_by_city.columns = offense_by_city.iloc[0, :]
-
-# removing the first row
-offense_by_city = offense_by_city.iloc[1:, :]
-
-# removing the last two rows
-offense_by_city = offense_by_city.iloc[:-2, :]
-
-# keeping relevant cols
-selected_city_cols = ['State', 'City', 'Population', 'Rape']
-offense_by_city = offense_by_city[selected_city_cols]
-
-# filling the missing values for state based on most recent non-NaN value
-offense_by_city['State'] = offense_by_city['State'].fillna(method='ffill')
-
-# converting to lower case and snake case by calling on fucntion
-convert_cols_to_lower_and_snake_case(offense_by_city)
-
-# converting the state col to title format
-offense_by_city['state'] = offense_by_city['state'].str.title()
-
-# adding state code column
-offense_by_city['Code'] = offense_by_city['state'].map(code)
-offense_by_city['city'] = offense_by_city['city'].str.strip()
-
-# resetting the index
-offense_by_city.reset_index(drop=True, inplace=True)
-offense_by_city.head()
-
 # crime by location
 crime_location = df_dict['Crimes_Against_Persons_Offenses_Offense_Category_by_Location_2022.xlsx']
 
@@ -807,7 +771,6 @@ merged_offenders
 all_datasets = {
     'offense_by_state': offense_by_state,
     'vic_offen_relationship': vic_offen_relationship,
-    'offense_by_city': offense_by_city,
     'crime_location': crime_location,
     'victim_age': victim_age,
     'victim_race': victim_race,
@@ -839,9 +802,6 @@ def change_datatype(data_frame, col_name, modified_datatype):
 offense_by_state = change_datatype(offense_by_state, 'population_covered', int)
 offense_by_state = change_datatype(offense_by_state, 'sex_offenses', int)
 vic_offen_relationship = change_datatype(vic_offen_relationship, 'sex_offenses', int)
-
-offense_by_city = change_datatype(offense_by_city, 'population', int)
-offense_by_city = change_datatype(offense_by_city, 'rape', int)
 
 crime_location = change_datatype(crime_location, 'sex_offenses', int)
 
@@ -987,45 +947,6 @@ fig = px.choropleth(offense_by_state,
                    )
 # setting county border color and width
 fig.update_traces(marker_line_color='white', marker_line_width=1.0)
-fig.show()
-
-# getting coordinates for each city
-city_details = df_dict["uscities.csv"]
-
-# keeping relevant cols
-selected_city_details_cols = ['city', 'state_id', 'state_name', 'county_name', 'lat', 'lng']
-city_details = city_details[selected_city_details_cols]
-
-# merging offense_by_city and city_details on city and state-code
-cities_loc = pd.merge(offense_by_city, city_details[['city', 'state_id', 'county_name', 'lat', 'lng']],
-                      left_on=['city', 'Code'], right_on=['city', 'state_id'], how='left')
-
-# removing repeated cols
-cities_loc.drop(['state_id'], axis=1, inplace=True)
-cities_loc.rename(columns={'state_id': 'state_id'}, inplace=True)
-
-# removing duplicates
-cities_loc = cities_loc.drop_duplicates()
-
-# removing missing vals since we don't have coordinates for 1900+ cities
-cities_loc_cleaned = cities_loc.dropna()
-
-# adding a new column for per capita sex offenses
-cities_loc_cleaned['per_capita_sex_off_cities'] = cities_loc_cleaned['rape'] / cities_loc_cleaned['population']
-
-# Mapbox token
-mapbox_token = "pk.eyJ1IjoiemFpbmFiLW1hay0wMSIsImEiOiJjbHNsamdtd2UwYjRjMnFsOTFhM2hxYTc0In0.AQL0zU0Ie-SCfU2kwoD1pQ"
-px.set_mapbox_access_token(mapbox_token)
-
-# setting parameters for plot
-fig = px.scatter_mapbox(cities_loc_cleaned, lat="lat", lon="lng",
-                        color="per_capita_sex_off_cities",
-                        size="per_capita_sex_off_cities",
-                        hover_data=["Code", "city", "county_name"],
-                        color_continuous_scale=px.colors.sequential.Magenta, size_max=15, zoom=2.5,
-                       labels={'per_capita_sex_off_cities': 'Sex Offenses By City (per capita)'})
-
-fig.update_layout(mapbox_style="open-street-map")
 fig.show()
 
 # top 10 counties by rape cases
@@ -1443,6 +1364,7 @@ top_10_dt = dt_feature_imp.nlargest(10)
 top_10_df_df = pd.DataFrame({'features': top_10_dt.index, 'importance_scores': top_10_dt.values})
 print(top_10_df_df)
 
+# random forest classifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import BaggingClassifier
@@ -1456,19 +1378,41 @@ rnd_clf.fit(X_train, y_train)
 y_pred_rf = rnd_clf.predict(X_valid)
 cross_val_scores = cross_val_score(rnd_clf, X_train, y_train, cv=5)
 mean_accuracy = cross_val_scores.mean()
-print("Random Forest Model with Cross-Validation:")
-print("========================================")
-print("Accuracy:", round(accuracy_score(y_valid, y_pred_rf),4))
-print("Precision:", round(precision_score(y_valid, y_pred_rf),4))
-print("Recall:", round(recall_score(y_valid, y_pred_rf),4))
-print("F1 Score:", round(f1_score(y_valid, y_pred_rf),4))
-print("Cross Validation:", round(mean_accuracy, 4))
-print("AUC-ROC Score:", round(roc_auc_score(y_valid, y_pred_rf), 4))
-print("========================================")
+
+# since this model is overfitting, we now apply grid search
+
+from sklearn.model_selection import GridSearchCV
+
+# finding the best combination of hyperparameters
+# setting parameters for grid search
+param_grid = {
+    'n_estimators': [50, 100, 150, 200],
+    'max_depth': [6, 9, 12, 15]
+}
+
+# applying grid search on the sample parameters above
+grid_search = GridSearchCV(estimator=rnd_clf, param_grid=param_grid, cv=5, scoring='accuracy')
+
+# fitting grid search on training data
+grid_search.fit(X_train, y_train)
+
+# best parameters found using gridsearch
+print(grid_search.best_params_)
+
+# making predictions with the improved model by using grid search
+best_rnd_clf = grid_search.best_estimator_
+y_pred_best_rf = best_rnd_clf.predict(X_valid)
+
+print("Random Forest Model with Grid Search and Cross Validation:")
+print("Accuracy:", round(accuracy_score(y_valid, y_pred_best_rf), 4))
+print("Precision:", round(precision_score(y_valid, y_pred_best_rf), 4))
+print("Recall:", round(recall_score(y_valid, y_pred_best_rf), 4))
+print("F1 Score:", round(f1_score(y_valid, y_pred_best_rf), 4))
+print("AUC-ROC Score:", round(roc_auc_score(y_valid, y_pred_best_rf), 4))
 
 # getting the confusion matrix for validation set for RF model
 
-cm_RF = confusion_matrix(y_valid, y_pred_rf)
+cm_RF = confusion_matrix(y_valid, y_pred_best_rf)
 
 plt.figure(figsize=(8, 6))
 sb.heatmap(cm_RF, annot=True, fmt="d", cmap="cool", cbar=False, square=True,
@@ -1480,10 +1424,10 @@ plt.title('Confusion Matrix - Random Forest')
 plt.show()
 
 # getting feature importance scores (top 10) from the random forest model
-rf_feature_imp = pd.Series(rnd_clf.feature_importances_, index = X_train.columns)
+rf_feature_imp = pd.Series(best_rnd_clf.feature_importances_, index = X_train.columns)
 top_10_rf = rf_feature_imp.nlargest(10)
 top_10_rf_df = pd.DataFrame({'feature': top_10_rf.index, 'importance_score': top_10_rf.values})
-print(top_10_rf_df)
+top_10_rf_df
 
 from sklearn.linear_model import LogisticRegression
 
@@ -1622,7 +1566,7 @@ roc_auc_tree = roc_auc_score(y_valid, y_score_tree)
 plt.plot(fpr_tree, tpr_tree, label=f'Decision Tree (AUC = {roc_auc_tree:.3f})', color="cornflowerblue")
 
 # Random Forest
-y_score_rf = rnd_clf.predict_proba(X_valid)[:, 1]
+y_score_rf = best_rnd_clf.predict_proba(X_valid)[:, 1]
 fpr_rf, tpr_rf, _ = roc_curve(y_valid, y_score_rf)
 roc_auc_rf = roc_auc_score(y_valid, y_score_rf)
 plt.plot(fpr_rf, tpr_rf, label=f'Random Forest (AUC = {roc_auc_rf:.3f})', color="palevioletred")
@@ -1651,15 +1595,12 @@ plt.show()
 # ensamble classifier
 from sklearn.ensemble import VotingClassifier
 
-# re-identifying svm classifier b/c 'pipeline' is not accepted by voting classifier
-svm_clf_two = SVC(kernel="rbf", gamma=5, C=1000, probability=True, random_state=42)
-
 # creating a soft voting classifier
 voting_clf = VotingClassifier(estimators=[
     ('decision_tree', tree_clf),
     ('random_forest', rnd_clf),
     ('logistic_regression', logistic_model),
-    ('svm', svm_clf_two)], voting='soft')
+    ('svm', best_svm_clf)], voting='soft')
 
 # fitting ensemble on train set
 voting_clf.fit(X_train, y_train)
