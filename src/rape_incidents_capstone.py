@@ -1004,7 +1004,7 @@ plt.figure(figsize=(10, 5))
 
 # Plotting the line plot
 plt.plot(national_rape_trend['years'], national_rape_trend['rape_incidents'],
-         color='cornflowerblue', label='Rape Incidents')
+         color='cornflowerblue', label='Rape Incidents', marker='o', markerfacecolor='darkmagenta')
 
 plt.xlabel('Time', fontsize=10)
 plt.ylabel('Number of Rape Incidents', fontsize=10)
@@ -1076,24 +1076,6 @@ vic_arr_race['arrestees'] = arrestee_race['arrestees']
 vic_arr_sex = victim_sex[['sex', 'victims']].copy()
 vic_arr_sex['arrestees'] = arrestee_sex['arrestees']
 
-# unknown_sex obs did not exist in arrestee_sex column so we'll replace NaN with 0
-vic_arr_sex['arrestees'] = vic_arr_sex['arrestees'].fillna(0)
-vic_arr_sex = change_datatype(vic_arr_sex, 'arrestees', int)
-
-# replacing missing values i.e., unknown race
-vic_arr_race['race'].replace('Unknown', np.nan, inplace=True)
-vic_arr_race['race'].fillna(vic_arr_race['race'].mode(dropna=True).iloc[0], inplace=True)
-
-# aggregating duplicated values created after replacing Nan with mode for vic_arr_race
-vic_arr_race = vic_arr_race.groupby('race').sum().reset_index()
-
-# replacing missing values i.e., unknown sex
-vic_arr_sex['sex'].replace('Unknown Sex', np.nan, inplace=True)
-vic_arr_sex['sex'].fillna(vic_arr_sex['sex'].mode(dropna=True).iloc[0], inplace=True)
-
-# aggregating duplicated values created after replacing Nan with mode for vic_arr_sex
-vic_arr_sex = vic_arr_sex.groupby('sex').sum().reset_index()
-
 # creating heatmap for victims and arrestees by Race
 # creating dict to modify names in race col
 race_dict = {
@@ -1134,7 +1116,8 @@ plt.subplot(1, 2, 2)
 # creating dict to modify names in sex col
 sex_dict = {
     'Male': 'Male',
-    'Female': 'Female'
+    'Female': 'Female',
+    'Unknown_Sex': 'Unspecified Sex'
 }
 
 # replacing race names with names in sex dictionary
