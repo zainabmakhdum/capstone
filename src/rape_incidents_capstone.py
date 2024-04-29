@@ -949,20 +949,6 @@ fig = px.choropleth(offense_by_state,
 fig.update_traces(marker_line_color='white', marker_line_width=1.0)
 fig.show()
 
-# top 10 counties by rape cases
-top_counties = offense_by_county.sort_values(by='rape', ascending=False).head(10)
-
-# adding state names to the counties
-top_counties['county_state'] = top_counties['county'] + ' - ' + top_counties['state']
-
-plt.figure(figsize=(6, 4))
-sb.barplot(x='rape', y='county_state', data=top_counties, palette='BuPu_r')
-plt.xlabel('Reported Rape Cases')
-plt.ylabel('County')
-plt.title('Top 10 Counties with the Highest Reported Rape Cases in 2022')
-plt.show()
-
-# plotting rape incidents by counties 
 from urllib.request import urlopen
 import json
 with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
@@ -975,21 +961,24 @@ offenses reported by the sheriff's office or county police department."""
 # creating copy for log transformation
 county_offenses_clean = offense_by_county.copy()
 
-# applying log(1 + x) since 'rape' col contains '0' vals
-county_offenses_clean['log_rape'] = np.log1p(county_offenses_clean['rape'])
+# applying log_10(1 + x) since 'rape' col contains '0' vals
+county_offenses_clean['log_rape'] = np.log10(1 + county_offenses_clean['rape'])
 
 choro_counties_fig = px.choropleth(county_offenses_clean,
     geojson=counties, locations='county_fips_code',
     color='log_rape', color_continuous_scale='dense',
     hover_data=['state', 'county', 'rape'],
     title="Distribution of Reported Rape Cases Across U.S. Counties in 2022",
-    labels={'log_rape': 'Rape Cases (log scale: ln(1+x))'},
+    labels={'log_rape': 'Rape Cases (log scale)'},
     scope='usa'
 )
 
 # adjusting title placement to make it visible
 choro_counties_fig.update_layout(title_x=0.5, title_y=0.90)
 
+# converting colorscale to scientific e notation
+choro_counties_fig.update_layout(coloraxis_colorbar=dict(tickformat='.2e'))
+        
 # setting county border color and width
 choro_counties_fig.update_traces(marker_line_color='white', marker_line_width=1.0)
 
