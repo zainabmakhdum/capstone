@@ -1294,7 +1294,7 @@ plt.show()
 
 Seasonal trends in @Fig-9 show that summer/early fall months (May, June, and September) had the highest reported sex offenses, while winter months (January, November, and December) had the lowest reported sex offenses in New York.
 
-Furthermore, the highest number of sex offenses took place on Saturdays – approximately 306 – while the lowest sex offenses took place on Sundays – approximately 259. This indicates a relatively minor disparity in sex offense rates. In fact, the National Institute of Justice states that, “More than half of the sexual assaults took place on weekends” [@strends]
+Furthermore, the highest number of sex offenses took place on Saturdays – approximately 306 – while the lowest sex offenses took place on Sundays – approximately 259. This indicates a relatively minor disparity in sex offense rates. In fact, the National Institute of Justice claims that, “More than half of the sexual assaults took place on weekends” [@strends]
 
 # Modelling: Completed vs. Attempted Sex Offenses
 
