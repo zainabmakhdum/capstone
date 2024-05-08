@@ -61,7 +61,6 @@ def missing_values(dataset):
 files = [
     "Crimes_Against_Persons_Offenses_Offense_Category_by_State_2022.xlsx",
     "Relationship_of_Victims_to_Offenders_by_Offense_Category_2022.xlsx",
-    "Table_8_Offenses_Known_to_Law_Enforcement_by_State_by_City_2022.xlsx",
     "Crimes_Against_Persons_Offenses_Offense_Category_by_Location_2022.xlsx",
     "Victims_Age_by_Offense_Category_2022.xlsx",
     "Victims_Race_by_Offense_Category_2022.xlsx",
@@ -69,7 +68,6 @@ files = [
     "Arrestees_Age_by_Arrest_Offense_Category_2022.xlsx",
     "Arrestees_Race_by_Arrest_Offense_Category_2022.xlsx",
     "Arrestees_Sex_by_Arrest_Offense_Category_2022.xlsx",
-    "Crimes_Against_Persons_Incidents_Offense_Category_by_Time_of_Day_2022.xlsx",
     "Number_of_Offenses_Completed_and_Attempted_by_Offense_Category_2022.xlsx",
     "National_Rape_Ten_Year_Trend.csv",
     "NIBRS_OFFENSE_TYPE.csv",
@@ -83,6 +81,9 @@ files = [
     "Table_10_Offenses_Known_to_Law_Enforcement_by_State_by_Metropolitan_and_Nonmetropolitan_Counties_2022.xlsx"
 ]
 
+# ---------------------------------------------------------
+# Source for importing multiple files: https://www.geeksforgeeks.org/importing-multiple-files-in-python/
+# START citation
 # empty dict to store dfs
 df_dict = {}
 
@@ -91,7 +92,8 @@ for file in files:
         df_dict[file] = pd.read_excel(file)
     elif file.endswith(".csv"):
         df_dict[file] = pd.read_csv(file)
-
+# END citation
+# ---------------------------------------------------------
 
 """Writing Datasets"""
 # offenses by state
@@ -150,8 +152,13 @@ offense_by_county = offense_by_county.iloc[:-2, :]
 selected_county_cols = ['State', 'County', 'Rape']
 offense_by_county = offense_by_county[selected_county_cols]
 
+# ---------------------------------------------------------
+# ffill method: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.ffill.html 
+# START citation
 # filling the missing values for state based on most recent non-NaN value
 offense_by_county['State'] = offense_by_county['State'].fillna(method='ffill')
+# END citation
+# ---------------------------------------------------------
 
 # removing county specifications + whitespace from state column
 offense_by_county['State'] = offense_by_county['State'].str.replace('- Metropolitan Counties', '').str.replace('- Nonmetropolitan Counties', '').str.strip()
@@ -169,11 +176,16 @@ offense_by_county['state'] = offense_by_county['state'].str.rstrip('2').str.stri
 offense_by_county['Code'] = offense_by_county['state'].map(code).str.strip()
 
 # changing dtype of rape col from object to int
-offense_by_county['rape'] = offense_by_county['rape'].astype(int)  # or float
+offense_by_county['rape'] = offense_by_county['rape'].astype(int)
 
+# ---------------------------------------------------------
+# source for web page request: https://www.w3schools.com/python/ref_requests_response.asp
+# START citation
 """Getting FIPS codes for counties and states"""
 # making request to access link for FIPS codes .txt file
 response = requests.get("https://transition.fcc.gov/oet/info/maps/census/fips/fips.txt")
+# END citation
+# ---------------------------------------------------------
 
 # skipping first few irrelevant lines 
 lines = response.text.split('\n')[7:]
@@ -200,7 +212,16 @@ state_fips['state'] = state_fips['state'].str.title()
 # this is the second dataframe
 county_lines = response.text.split('\n')[70:]
 n_county_lines = '\n'.join(county_lines)
-county_fips = pd.read_fwf(StringIO(n_county_lines), header=0)
+# ---------------------------------------------------------
+# source for using IO objects: https://www.geeksforgeeks.org/stringio-module-in-python/ 
+# START citation
+# treating each county as a seperate file
+county_lines_files = StringIO(n_county_lines)
+# END citation
+# ---------------------------------------------------------
+
+# reading counties with fixed width format
+county_fips = pd.read_fwf(county_lines_files, header=0)
 
 # removing first row
 county_fips = county_fips.iloc[1:]
@@ -556,33 +577,6 @@ arrestee_sex.columns = arrestee_sex.columns.str.replace('sex_offenses', 'arreste
 
 arrestee_sex
 
-# recorded offenses by time of day
-offenses_time = df_dict['Crimes_Against_Persons_Incidents_Offense_Category_by_Time_of_Day_2022.xlsx']
-
-# assigning the fourth row as the column headers
-offenses_time.columns = offenses_time.iloc[3, :]
-
-# changing specific col names
-offenses_time.columns.values[:2] = ['time', 'total_incidents']
-offenses_time.columns = offenses_time.columns.str.replace('\n', ' ')
-offenses_time.columns = offenses_time.columns.str.replace(' ', '_')
-
-# keeping relevant cols
-selected_time_cols = ['time', 'Sex_Offenses']
-offenses_time = offenses_time[selected_time_cols]
-
-# removing irrelevant rows
-offenses_time = offenses_time.iloc[5:, :]
-offenses_time = offenses_time.iloc[:-1, :]
-offenses_time = offenses_time[offenses_time['time'].isin(['Total A.M. Hours', 'Total P.M. Hours']) == False]
-
-# converting to lower case and snake case by calling on fucntion
-convert_cols_to_lower_and_snake_case(offenses_time)
-
-# resetting index
-offenses_time.reset_index(drop=True, inplace=True)
-offenses_time
-
 # attempt vs complete status
 attempt_complete_status = df_dict['Number_of_Offenses_Completed_and_Attempted_by_Offense_Category_2022.xlsx']
 
@@ -778,7 +772,6 @@ all_datasets = {
     'arrestee_age': arrestee_age,
     'arrestee_race': arrestee_race,
     'arrestee_sex': arrestee_sex,
-    'offenses_time': offenses_time,
     'national_rape_trend': national_rape_trend,
     'merged_offenders': merged_offenders,
     'attempt_complete_status': attempt_complete_status
@@ -815,8 +808,6 @@ arrestee_age = change_datatype(arrestee_age, 'arrestees', int)
 arrestee_race = change_datatype(arrestee_race, 'arrestees', int)
 arrestee_sex = change_datatype(arrestee_sex, 'arrestees', int)
 
-offenses_time = change_datatype(offenses_time, 'sex_offenses', int)
-
 national_rape_trend = change_datatype(national_rape_trend, 'rape_incidents', int)
 national_rape_trend = change_datatype(national_rape_trend, 'years', int)
 
@@ -852,29 +843,8 @@ Therefore, we'll take a closer look."""
 
 merged_offenders.isna().sum()
 
-# changing dtype from object to float to visualize distribution of age
+# changing dtype from object to float for age
 merged_offenders = change_datatype(merged_offenders, 'age_num', float)
-
-
-def boxplot_visualize(data_frame, col_name):
-    """
-    Createing a boxplot for a specific column in a dataframe to examine distributions.
-    """
-    fig = px.box(data_frame,
-                 y = col_name,
-                 title = f'Boxplot for {col_name}',
-                 labels = {col_name: col_name})
-    
-    fig.update_layout(
-        title=dict(font=dict(size=14)),
-        height = 400,
-        width = 400
-    )
-    
-    fig.show()
-
-
-boxplot_visualize(merged_offenders, 'age_num')
 
 """Since there are outliers present, we want to replace the missing
 values in this column with the median."""
@@ -914,6 +884,8 @@ fig, axs = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
 sb.barplot(x=['Victims', 'Arrestees'], y=[total_victims, total_arrestees],
            palette=vic_arr_color_dict, ax=axs[0])
 axs[0].set_title("Total Number of Victims vs. Arrests in 2022", fontsize=10)
+
+# both share the same x-axis
 axs[0].set_xlabel("Category", fontsize=10)
 axs[0].set_ylabel("Count", fontsize=10)
 
@@ -927,7 +899,7 @@ plt.tight_layout()
 plt.show()
 
 """Question Two:
-How do rape rates differ across different states, cities, and towns in 2022?"""
+How do rape rates differ across different states and counties in 2022?"""
 
 # adding a new column for per capita sex offenses
 offense_by_state['per_capita_sex_off'] = offense_by_state['sex_offenses'] / offense_by_state['population_covered']
@@ -949,6 +921,9 @@ fig = px.choropleth(offense_by_state,
 fig.update_traces(marker_line_color='white', marker_line_width=1.0)
 fig.show()
 
+# ---------------------------------------------------------
+# source for plotting counties plot: https://plotly.com/python/mapbox-county-choropleth/
+# START citation
 from urllib.request import urlopen
 import json
 with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
@@ -972,6 +947,8 @@ choro_counties_fig = px.choropleth(county_offenses_clean,
     labels={'log_rape': 'Rape Cases (log scale)'},
     scope='usa'
 )
+# END citation
+# ---------------------------------------------------------
 
 # adjusting title placement to make it visible
 choro_counties_fig.update_layout(title_x=0.5, title_y=0.90)
@@ -985,8 +962,7 @@ choro_counties_fig.update_traces(marker_line_color='white', marker_line_width=1.
 choro_counties_fig.show()
 
 """Question Three:
-How do rape rates change over time on a national level between 2012-2022
-and throughout the day in 2022?"""
+How do rape rates change over time on a national level between 2012-2022?"""
 
 # plot for national rape trend (2012-2022)
 plt.figure(figsize=(10, 5))
@@ -999,34 +975,6 @@ plt.xlabel('Time', fontsize=10)
 plt.ylabel('Number of Rape Incidents', fontsize=10)
 plt.title('Number of Rape Incidents In The United States (2012-2022)', fontsize=10)
 plt.xticks(national_rape_trend['years'], fontsize=10)
-plt.yticks(fontsize=10)
-plt.legend(fontsize=10)
-
-plt.tight_layout()
-plt.show()
-
-# plot for rape rates throughout the day
-# removing 'Unknown Time of Day' obs
-offenses_time = offenses_time[offenses_time['time'] != 'Unknown Time of Day']
-
-# extract the part before '-'
-offenses_time['time'] = offenses_time['time'].str.extract(r'([\d:]+ [apm.]+)')[0]
-
-# replace values in rows 0 and 12
-offenses_time.loc[0, 'time'] = '12 a.m.'
-offenses_time.loc[12, 'time'] = '12 p.m.'
-
-
-plt.figure(figsize=(10, 5))
-
-# each time is between the specified time until 1min before the end of the hour e.g. 11:59pm
-plt.plot(offenses_time['time'], offenses_time['sex_offenses'],
-         color='orchid', label='Sex Offenses')
-
-plt.xlabel('Time', fontsize=10)
-plt.ylabel('Number of Sex Offenses', fontsize=10)
-plt.title('Time Periods For Sex Offenses Throughout The Day (2022)', fontsize=10)
-plt.xticks(rotation=45, fontsize=10)
 plt.yticks(fontsize=10)
 plt.legend(fontsize=10)
 
@@ -1066,6 +1014,10 @@ vic_arr_sex = victim_sex[['sex', 'victims']].copy()
 vic_arr_sex['arrestees'] = arrestee_sex['arrestees']
 
 # creating heatmap for victims and arrestees by Race
+
+# ---------------------------------------------------------
+# Source for mapping: https://www.geeksforgeeks.org/mapping-external-values-to-dataframe-values-in-pandas/
+# START citation
 # creating dict to modify names in race col
 race_dict = {
     'White': 'White',
@@ -1077,6 +1029,8 @@ race_dict = {
 
 # replacing race names with names in race dictionary
 vic_arr_race['race'] = vic_arr_race['race'].map(race_dict)
+# END citation
+# ---------------------------------------------------------
 
 # color palette using cubehelix_palette
 cubehelix_colors = sb.cubehelix_palette(as_cmap = True)
@@ -1094,15 +1048,17 @@ plt.xlabel('Category', fontsize = 10)
 plt.ylabel('Race', fontsize = 10)
 
 
-
 # adjusting space between subplots to avoid overlapping
 plt.subplots_adjust(wspace=0.5)
 
 # creating the second heatmap for victims and arrestees by Sex
 plt.subplot(1, 2, 2)
 
+# ---------------------------------------------------------
 # creating heatmap for victims and arrestees by Sex
 # creating dict to modify names in sex col
+# source for mapping: https://www.geeksforgeeks.org/mapping-external-values-to-dataframe-values-in-pandas/
+# START citation
 sex_dict = {
     'Male': 'Male',
     'Female': 'Female',
@@ -1111,6 +1067,8 @@ sex_dict = {
 
 # replacing race names with names in sex dictionary
 vic_arr_sex['sex'] = vic_arr_sex['sex'].map(sex_dict)
+# END citation
+# ---------------------------------------------------------
 
 sb.heatmap(vic_arr_sex.pivot_table(index='sex', values=['victims', 'arrestees'],
                                     aggfunc='sum'),
@@ -1126,7 +1084,10 @@ plt.show()
 """Question Five:
 Does a relationship exist between the victims and offenders?"""
 
+# ---------------------------------------------------------
 # creating dict to modify relationships in relationship col
+# source for mapping: https://www.geeksforgeeks.org/mapping-external-values-to-dataframe-values-in-pandas/
+# START citation
 rel_dict = {
     'family_member': 'Family Member',
     'family_member_and_other': 'Family Member and Other',
@@ -1137,12 +1098,17 @@ rel_dict = {
 
 # applying dict to relationship column through .map()
 vic_offen_relationship['relationship'] = vic_offen_relationship['relationship'].map(rel_dict)
+# END citation
+# ---------------------------------------------------------
 
 plt.figure(figsize=(9, 6))
 
 # color selection
 custom_colors = ['plum', 'lavender', 'lightsteelblue', 'steelblue', 'mediumpurple']
 
+# ---------------------------------------------------------
+# Source for labelling pie chart: https://matplotlib.org/stable/gallery/pie_and_polar_charts/pie_and_donut_labels.html
+# START citation
 # creating pie chart - including adding percentages and changing distances
 wedges, texts, autotexts = plt.pie(vic_offen_relationship['sex_offenses'],
         labels=vic_offen_relationship['relationship'],
@@ -1158,17 +1124,23 @@ plt.legend(wedges, vic_offen_relationship['relationship'], title="Relationship",
            loc="right", bbox_to_anchor=(1, 0, 0.5, 1))
 
 plt.show()
+# END citation
+# ---------------------------------------------------------
 
 """Question Six:
 What specific locations (home, university, office etc.) are hotspots for
-higher rape incidents/sex offenses?"""
+higher rape incidents/sex offenses in 2022?"""
 
 # pip install wordcloud
 
 # creating dict for specific locations + freq of sex offenses in each location
 wordcloud_loc_dict = crime_location.set_index('location')['sex_offenses'].to_dict()
 
+# ---------------------------------------------------------
 # creating wordcloud
+# source for creating wordcloud: https://shreehar01.github.io/Analysis-of-Global-Terrorism/doc/blog.html 
+# START citation
+# located under 'Terrorism in US' section
 wordcloud_loc = WordCloud(width=1000,
                           height=800,
                           background_color='white',
@@ -1183,6 +1155,8 @@ plt.axis('off')
 plt.title('Locations of Sex Offenses Committed in 2022', fontsize=10)
 plt.tight_layout(pad = 4)
 plt.show()
+# END citation
+# ---------------------------------------------------------
 
 """Case Study: Sex Offense Incidents Seasonal Trends in New York State"""
 
@@ -1198,11 +1172,15 @@ sex_off_date_vals = removed_na.groupby(['incident_date']).size().reset_index(nam
 # setting the incident_date column as index
 sex_off_date_vals.set_index('incident_date', inplace=True)
 
+# ---------------------------------------------------------
 # calendar heatmap using calplot
+# source for calander heatmap: https://calplot.readthedocs.io/en/latest/
+# START citation
 calplot.calplot(sex_off_date_vals['sex_offenses_count'], cmap='PuRd', colorbar=True)
-
 #plt.title('Number of Sex Offense Incidents in NY State for 2022')
 plt.show()
+# END citation
+# ---------------------------------------------------------
 
 """Data Cleaning For Modelling"""
 # creating dummy variables/encoding
@@ -1218,9 +1196,14 @@ mod_offenders_df = merged_offenders.drop(columns=irrelevant_cols_mod)
 # making offender_id the index
 mod_offenders_df = mod_offenders_df.set_index('offender_id')
 
+# ---------------------------------------------------------
 # manually mapping categories in sex_code col
+# source for mapping: https://www.geeksforgeeks.org/mapping-external-values-to-dataframe-values-in-pandas/
+# START citation
 sex_dict_unq = {'M': 'Male', 'F': 'Female', 'U': 'Unknown', 'X': 'Nonbinary'}
 mod_offenders_df['sex_code'] = mod_offenders_df['sex_code'].map(sex_dict_unq)
+# END citation
+# ---------------------------------------------------------
 
 # identifying and replacing unknown values in weapon_name col with mode
 mod_offenders_df['weapon_name'].replace('Unknown', np.nan, inplace=True)
@@ -1263,13 +1246,18 @@ from imblearn.pipeline import Pipeline
 X = mod_offenders_df.drop('attempt_complete_flag', axis=1)
 y = mod_offenders_df['attempt_complete_flag']
 
+# ---------------------------------------------------------
 # using SMOTE
-pipeline = Pipeline([
-    ('over', SMOTE(sampling_strategy='auto')),
-])
+# source: https://machinelearningmastery.com/smote-oversampling-for-imbalanced-classification/
+# START citation
+# code found under 'SMOTE for Classification' section
+steps = [('over', SMOTE())]
+pipeline = Pipeline(steps=steps)
 
 # fitting the SMOTE pipeline on the data
 X, y = pipeline.fit_resample(X, y)
+# END citation
+# ---------------------------------------------------------
 
 # examining class imbalance after applying SMOTE
 class_dist_res = pd.Series(y).value_counts()
@@ -1280,13 +1268,22 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 # checking for multicolinearity by calculating VIF
 vif_vals = pd.DataFrame()
 vif_vals["Variable"] = X.columns
+# ---------------------------------------------------------
+# source: https://www.statology.org/how-to-calculate-vif-in-python/
+# START citation
 vif_vals["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
 vif_vals[vif_vals["VIF"] > 10]
+# END citation
+# ---------------------------------------------------------
 
 # removing personal weapons as a feture due to VIF >10
 X = X.drop(columns=["weapon_name_Personal Weapons"])
 X
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 # training, validation, and test set using the ratio 5 : 1 : 1
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7142857143, random_state=42)
 X_valid, X_test, y_valid, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
@@ -1350,12 +1347,17 @@ rnd_clf.fit(X_train, y_train)
 y_pred_rf = rnd_clf.predict(X_valid)
 cross_val_scores = cross_val_score(rnd_clf, X_train, y_train, cv=5)
 mean_accuracy = cross_val_scores.mean()
+# END citation
+# ---------------------------------------------------------
 
 # since this model is overfitting, we now apply grid search
 
 from sklearn.model_selection import GridSearchCV
 
+# ---------------------------------------------------------
 # finding the best combination of hyperparameters
+# source for gridsearch: https://www.geeksforgeeks.org/random-forest-hyperparameter-tuning-in-python/
+# START citation
 # setting parameters for grid search
 param_grid = {
     'n_estimators': [50, 100, 150, 200],
@@ -1370,6 +1372,8 @@ grid_search.fit(X_train, y_train)
 
 # best parameters found using gridsearch
 print(grid_search.best_params_)
+# END citation
+# ---------------------------------------------------------
 
 # making predictions with the improved model by using grid search
 best_rnd_clf = grid_search.best_estimator_
@@ -1384,6 +1388,10 @@ print("AUC-ROC Score:", round(roc_auc_score(y_valid, y_pred_best_rf), 4))
 
 # getting the confusion matrix for validation set for RF model
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 cm_RF = confusion_matrix(y_valid, y_pred_best_rf)
 
 plt.figure(figsize=(8, 6))
@@ -1525,7 +1533,12 @@ plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title('Confusion Matrix - SVM with RBF Kernel')
 plt.show()
+# END citation
+# ---------------------------------------------------------
 
+# ---------------------------------------------------------
+# source for roc_auc_scores: https://www.geeksforgeeks.org/calculate-roc-auc-for-classification-algorithm-such-as-random-forest/
+# START citation
 # creating roc curve to examine model performance of each model individually
 from sklearn.metrics import roc_curve, roc_auc_score
 
@@ -1548,12 +1561,22 @@ y_score_logreg = logistic_model.predict_proba(X_valid)[:, 1]
 fpr_logreg, tpr_logreg, _ = roc_curve(y_valid, y_score_logreg)
 roc_auc_logreg = roc_auc_score(y_valid, y_score_logreg)
 plt.plot(fpr_logreg, tpr_logreg, label=f'Logistic Regression (AUC = {roc_auc_logreg:.3f})', color="powderblue")
+# END citation
+# ---------------------------------------------------------
 
+# ---------------------------------------------------------
 # SVM
+# source for svm roc_auc_score: https://stackoverflow.com/questions/59227176/how-to-plot-roc-and-calculate-auc-for-binary-classifier-with-no-probabilities-s
+# START citation
 fpr_svm, tpr_svm, _ = roc_curve(y_valid, best_svm_decision_scores)
 roc_auc_svm = roc_auc_score(y_valid, best_svm_decision_scores)
 plt.plot(fpr_svm, tpr_svm, label=f'SVM (AUC = {roc_auc_svm:.3f})', color="thistle")
+# END citation
+# ---------------------------------------------------------
 
+# ---------------------------------------------------------
+# source for plotting roc curves for all models in one plot: https://stackoverflow.com/questions/42894871/how-to-plot-multiple-roc-curves-in-one-plot-with-legend-and-auc-scores-in-python
+# START citation
 # plotting the ROC curve
 plt.plot([0, 1], [0, 1], 'k--')
 plt.xlim([0.0, 1.0])
@@ -1563,7 +1586,13 @@ plt.ylabel('True Positive Rate')
 #plt.title('Receiver Operating Characteristic (ROC) Curve')
 plt.legend(loc="lower right")
 plt.show()
+# END citation
+# ---------------------------------------------------------
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 # ensamble classifier
 from sklearn.ensemble import VotingClassifier
 
@@ -1600,3 +1629,5 @@ plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title('Confusion Matrix - SVM with RBF Kernel')
 plt.show()
+# END citation
+# ---------------------------------------------------------
