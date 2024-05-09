@@ -73,7 +73,6 @@ files = [
     "NIBRS_OFFENSE_TYPE.csv",
     "NIBRS_OFFENDER.csv",
     "NIBRS_OFFENSE.csv",
-    "uscities.csv",
     "NIBRS_incident.csv",
     "NIBRS_LOCATION_TYPE.csv",
     "NIBRS_WEAPON_TYPE.csv",
