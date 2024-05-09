@@ -12,15 +12,17 @@ format:
     toc: true
   pdf: default
 jupyter: python3
+nocite: |
+  @*
 ---
 
 ![Source: University of Nebraska, Omaha](awareness.jpeg){width=100%}
 
-# Introduction
+# Scope of The Issue
 
-According to *RAINN* – the Rape, Abuse, and Incest National Network – every 68 seconds an American is sexually assaulted with one out of six American women and one in thirty-three American men being the victim of attempted or completed rape in their lifetime [@rainn].
+According to *[The Rape, Abuse, and Incest National Network](https://www.rainn.org/statistics/scope-problem)* (RAINN), every 68 seconds, an American falls victim to sexual assault. Moreover, one in six American women and one in thirty-three American men experience either attempted or completed sexual assault in their lifetime.
 
-It is important to address this issue in order to combat sexual violence by spreading awareness as well as providing mediums of support to victims of this heinous crime. Therefore, in order to uncover nuanced insights for the complex dynamics in rape and sex offenses, the purpose of this research is to analyze how demographic, geographical, and relational factors influence the varying patterns of rape incidents in the United States in 2022.  
+While substantial progress has been made to eliminate the stigmas surrounding this issue, it is important to keep the momentum going on sexual assault awareness in order to combat it effectively. Therefore, the purpose of this research is to determine the following: how do demographic, geographical, and relational factors influence the varying patterns of rape incidents across the United States in 2022? 
 
 ::: {#tip-legal-definitions .callout-note}
 ## FBI Legal Definitions of Rape and Sex Offenses
@@ -33,17 +35,18 @@ It is important to address this issue in order to combat sexual violence by spre
 
 # Data Description
 
-For this project, the data was obtained from the Federal Bureau of Investigation (FBI) through their Crime Explorer online tool. The FBI utilizes the Uniform Crime Reporting (UCR) Program to collect data from over 18,000 city, county, state, university and college, tribal, and law enforcement agencies [@ddtfbi]. Due to discrepancies in the legal definition of rape, sexual assault, and sexual abuse on a state by state case, it is important to note that certain limitations exist in the data collection for some states. 
+For this project, the data was obtained from the *Federal Bureau of Investigation* (FBI) through their [Crime Explorer Online Tool](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home). The FBI utilizes the Uniform Crime Reporting (UCR) Program to collect data from over 18,000 city, county, state, university and college, tribal, and law enforcement agencies. Due to discrepancies in the legal definition of rape, sexual assault, and sexual abuse on a state by state case, it is important to note that certain limitations exist in the data collection for some states. 
 
 Over twenty datasets were extracted via the Python programming language from this database which were comprised of crucial information on the victims by state, the precise location of a sex offense, victim-offender relationship, victim and arrestee demographics (age, race, and sex), etc.
 
 # Data Preprocessing
 
-Each of the twenty-three datasets consisted of information on a separate aspect of all criminal activity – including violent crime and property crime. For instance, one file consisted of crimes categorized by state, while another file consisted of crimes categorized by counties. Since this research primarily focused on examining sex offenses, which are categorized under violent crimes, the initial step was to extract data specifically related to this form of criminal activity.
+Each of the twenty-one datasets consisted of information on a separate aspect of all criminal activity – including violent and property crime. For instance, one file consisted of crimes categorized by state, while another file consisted of crimes classified by county. Since this research primarily focuses on examining sex offenses, which are categorized under violent crimes, the initial step was to extract data specifically related to this form of criminal activity.
 
-Other steps in data preparation included imputing the missing values based on the median and mode, depending on whether the variable was quantitative or qualitative, as well as changing datatypes and making the column headers easily interpretable and accessible. In the case for offenses by state and county datasets, importing the files yielded missing values due to Excel file formatting issues. Therefore, the best course of action was to replace the missing values based on the nearest non-missing value. Moreover, FIPS (Federal Information Processing System) codes were utilized to ensure that the county and state names matched for all observations.
+Other steps in data preparation included imputing the missing values based on the median and mode, depending on whether the variable was quantitative or qualitative, as well as changing datatypes and making the column headers easily interpretable and accessible. In the case of offenses by state and county datasets, importing the files yielded missing values due to Excel file formatting issues. Therefore, the best course of action was to replace the missing values based on the nearest non-missing value. Moreover, *Federal Information Processing System* (FIPS) codes were utilized to ensure that the county and state names matched for all observations.
 
-To prepare the data for modelling, multiple datasets were merged to develop a comprehensive dataset of sex offenders in NY state. This consisted of relevant features such as age, sex, location of crime, and weapons used during the crime. Due to the presence of categorical variables, dummy variables we created, and the issue of class imbalance was dealt by utilizing the Synthetic Minority Over-sampling Technique (SMOTE). Furthermore, the data was standardized and a check for multicollinearity resulted in removing a highly correlated variable. Lastly, the data was split into training, testing, and validation sets based on a 5:1:1 ratio. 
+To prepare the data for modeling, multiple datasets were merged to develop a comprehensive dataset of sex offenders in NY state for 2022. This incorporated relevant features such as age, sex, location of crime, and weapons used during the crime. Due to the presence of categorical variables, dummy variables we created, and the issue of class imbalance was tackled using the Synthetic Minority Over-sampling Technique (SMOTE). Furthermore, the data was standardized and a check for multicollinearity resulted in removing a highly correlated variable. Lastly, the data was split into training, testing, and validation sets based on a 5:1:1 ratio. 
+
 
 ```{python, echo=FALSE}
 #| warning: false
@@ -87,9 +90,12 @@ from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_sc
 ```{python}
 #| warning: false
 #| echo: false
+#| output: false
 
-# file directory path
+# file directory path 
+# changing file path
 os.chdir('/Users/zainabmakhdum/Downloads/capstone/data')
+print("Updated Directory:", os.getcwd())
 
 """Defining Functions"""
 
@@ -121,7 +127,6 @@ def missing_values(dataset):
 files = [
     "Crimes_Against_Persons_Offenses_Offense_Category_by_State_2022.xlsx",
     "Relationship_of_Victims_to_Offenders_by_Offense_Category_2022.xlsx",
-    "Table_8_Offenses_Known_to_Law_Enforcement_by_State_by_City_2022.xlsx",
     "Crimes_Against_Persons_Offenses_Offense_Category_by_Location_2022.xlsx",
     "Victims_Age_by_Offense_Category_2022.xlsx",
     "Victims_Race_by_Offense_Category_2022.xlsx",
@@ -129,7 +134,6 @@ files = [
     "Arrestees_Age_by_Arrest_Offense_Category_2022.xlsx",
     "Arrestees_Race_by_Arrest_Offense_Category_2022.xlsx",
     "Arrestees_Sex_by_Arrest_Offense_Category_2022.xlsx",
-    "Crimes_Against_Persons_Incidents_Offense_Category_by_Time_of_Day_2022.xlsx",
     "Number_of_Offenses_Completed_and_Attempted_by_Offense_Category_2022.xlsx",
     "National_Rape_Ten_Year_Trend.csv",
     "NIBRS_OFFENSE_TYPE.csv",
@@ -143,6 +147,9 @@ files = [
     "Table_10_Offenses_Known_to_Law_Enforcement_by_State_by_Metropolitan_and_Nonmetropolitan_Counties_2022.xlsx"
 ]
 
+# ---------------------------------------------------------
+# Source for importing multiple files: https://www.geeksforgeeks.org/importing-multiple-files-in-python/
+# START citation
 # empty dict to store dfs
 df_dict = {}
 
@@ -151,7 +158,8 @@ for file in files:
         df_dict[file] = pd.read_excel(file)
     elif file.endswith(".csv"):
         df_dict[file] = pd.read_csv(file)
-
+# END citation
+# ---------------------------------------------------------
 
 """Writing Datasets"""
 # offenses by state
@@ -174,6 +182,9 @@ convert_cols_to_lower_and_snake_case(offense_by_state)
 # resetting index
 offense_by_state.reset_index(drop=True, inplace=True)
 
+# ---------------------------------------------------------
+# source for state codes: https://www.faa.gov/air_traffic/publications/atpubs/cnt_html/appendix_a.html
+# START citation
 code = {'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
         'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'District of Columbia': 'DC',
         'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL',
@@ -187,8 +198,9 @@ code = {'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'Cal
         'Wisconsin': 'WI', 'Wyoming': 'WY'}
 
 offense_by_state['Code'] = offense_by_state['state'].map(code)
-#offense_by_state.head()
-
+offense_by_state.head()
+# END citation
+# ---------------------------------------------------------
 
 """Offense by county data"""
 # offenses by county
@@ -210,8 +222,13 @@ offense_by_county = offense_by_county.iloc[:-2, :]
 selected_county_cols = ['State', 'County', 'Rape']
 offense_by_county = offense_by_county[selected_county_cols]
 
+# ---------------------------------------------------------
+# ffill method: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.ffill.html 
+# START citation
 # filling the missing values for state based on most recent non-NaN value
 offense_by_county['State'] = offense_by_county['State'].fillna(method='ffill')
+# END citation
+# ---------------------------------------------------------
 
 # removing county specifications + whitespace from state column
 offense_by_county['State'] = offense_by_county['State'].str.replace('- Metropolitan Counties', '').str.replace('- Nonmetropolitan Counties', '').str.strip()
@@ -229,11 +246,16 @@ offense_by_county['state'] = offense_by_county['state'].str.rstrip('2').str.stri
 offense_by_county['Code'] = offense_by_county['state'].map(code).str.strip()
 
 # changing dtype of rape col from object to int
-offense_by_county['rape'] = offense_by_county['rape'].astype(int)  # or float
+offense_by_county['rape'] = offense_by_county['rape'].astype(int)
 
+# ---------------------------------------------------------
+# source for web page request: https://www.w3schools.com/python/ref_requests_response.asp
+# START citation
 """Getting FIPS codes for counties and states"""
 # making request to access link for FIPS codes .txt file
 response = requests.get("https://transition.fcc.gov/oet/info/maps/census/fips/fips.txt")
+# END citation
+# ---------------------------------------------------------
 
 # skipping first few irrelevant lines 
 lines = response.text.split('\n')[7:]
@@ -242,7 +264,13 @@ lines = response.text.split('\n')[7:]
 # this is the first dataframe
 lines = lines[7:60]
 n_lines = '\n'.join(lines)
+# ---------------------------------------------------------
+# source for using IO objects: https://www.geeksforgeeks.org/stringio-module-in-python/ 
+# START citation
+# treating each state as a seperate file
 state_fips = pd.read_fwf(StringIO(n_lines), header=0)
+# END citation
+# ---------------------------------------------------------
 
 # removing first row
 state_fips = state_fips.iloc[1:]
@@ -260,7 +288,16 @@ state_fips['state'] = state_fips['state'].str.title()
 # this is the second dataframe
 county_lines = response.text.split('\n')[70:]
 n_county_lines = '\n'.join(county_lines)
-county_fips = pd.read_fwf(StringIO(n_county_lines), header=0)
+# ---------------------------------------------------------
+# source for using IO objects: https://www.geeksforgeeks.org/stringio-module-in-python/ 
+# START citation
+# treating each county as a seperate file
+county_lines_files = StringIO(n_county_lines)
+# END citation
+# ---------------------------------------------------------
+
+# reading counties with fixed width format
+county_fips = pd.read_fwf(county_lines_files, header=0)
 
 # removing first row
 county_fips = county_fips.iloc[1:]
@@ -355,7 +392,7 @@ new_loc_col_names = ['location', 'sex_offenses']
 crime_location.columns = new_loc_col_names
 crime_location = crime_location.iloc[5:, :]
 crime_location.reset_index(drop=True, inplace=True)
-# crime_location.head()
+crime_location.head()
 
 # Victim Demographics
 # victim age
@@ -397,7 +434,7 @@ victim_age.columns = victim_age.columns.str.replace('sex_offenses', 'victims')
 
 # Resetting the index
 victim_age.reset_index(drop=True, inplace=True)
-# victim_age.head()
+victim_age.head()
 
 # Victim Demographics
 # victim race
@@ -438,7 +475,7 @@ victim_race.columns = victim_race.columns.str.replace('sex_offenses', 'victims')
 # Resetting the index
 victim_race.reset_index(drop=True, inplace=True)
 
-#victim_race
+victim_race
 
 # Victim Demographics
 # victim sex
@@ -479,7 +516,7 @@ victim_sex.columns = victim_sex.columns.str.replace('sex_offenses', 'victims')
 # Resetting the index
 victim_sex.reset_index(drop=True, inplace=True)
 
-#victim_sex
+victim_sex
 
 # Arrestee Demographics
 # arrestee age
@@ -488,7 +525,7 @@ arrestee_age = df_dict['Arrestees_Age_by_Arrest_Offense_Category_2022.xlsx']
 
 # assigning the fourth row as the column headers
 arrestee_age.columns = arrestee_age.iloc[3, :]
-#arrestee_age
+arrestee_age
 
 # changing specific col names
 arrestee_age.columns.values[:2] = ['offense_category', 'total_arrestees']
@@ -527,7 +564,7 @@ arrestee_age['age'] = arrestee_age['age'].str.lower()
 # Resetting the index
 arrestee_age.reset_index(drop=True, inplace=True)
 
-# arrestee_age.head()
+arrestee_age.head()
 
 # Arrestee Demographics
 # arrestee race
@@ -571,7 +608,7 @@ arrestee_race.columns = arrestee_race.columns.str.replace('sex_offenses', 'arres
 # Resetting the index
 arrestee_race.reset_index(drop=True, inplace=True)
 
-# arrestee_race
+arrestee_race
 
 # Arrestee Demographics
 # Arrestee Sex
@@ -614,34 +651,7 @@ arrestee_sex.reset_index(drop=True, inplace=True)
 # changing specific col names after transposing
 arrestee_sex.columns = arrestee_sex.columns.str.replace('sex_offenses', 'arrestees')
 
-# arrestee_sex
-
-# recorded offenses by time of day
-offenses_time = df_dict['Crimes_Against_Persons_Incidents_Offense_Category_by_Time_of_Day_2022.xlsx']
-
-# assigning the fourth row as the column headers
-offenses_time.columns = offenses_time.iloc[3, :]
-
-# changing specific col names
-offenses_time.columns.values[:2] = ['time', 'total_incidents']
-offenses_time.columns = offenses_time.columns.str.replace('\n', ' ')
-offenses_time.columns = offenses_time.columns.str.replace(' ', '_')
-
-# keeping relevant cols
-selected_time_cols = ['time', 'Sex_Offenses']
-offenses_time = offenses_time[selected_time_cols]
-
-# removing irrelevant rows
-offenses_time = offenses_time.iloc[5:, :]
-offenses_time = offenses_time.iloc[:-1, :]
-offenses_time = offenses_time[offenses_time['time'].isin(['Total A.M. Hours', 'Total P.M. Hours']) == False]
-
-# converting to lower case and snake case by calling on fucntion
-convert_cols_to_lower_and_snake_case(offenses_time)
-
-# resetting index
-offenses_time.reset_index(drop=True, inplace=True)
-# offenses_time
+arrestee_sex
 
 # attempt vs complete status
 attempt_complete_status = df_dict['Number_of_Offenses_Completed_and_Attempted_by_Offense_Category_2022.xlsx']
@@ -698,7 +708,7 @@ national_rape_trend = national_rape_trend[1:]
 # converting to lower case and snake case by calling on fucntion
 convert_cols_to_lower_and_snake_case(national_rape_trend)
 
-# national_rape_trend.head()
+national_rape_trend.head()
 
 # Offense Type
 offense_type = df_dict['NIBRS_OFFENSE_TYPE.csv']
@@ -838,17 +848,16 @@ all_datasets = {
     'arrestee_age': arrestee_age,
     'arrestee_race': arrestee_race,
     'arrestee_sex': arrestee_sex,
-    'offenses_time': offenses_time,
     'national_rape_trend': national_rape_trend,
     'merged_offenders': merged_offenders,
     'attempt_complete_status': attempt_complete_status
 }
 
 # Identifying and Changing Datatypes
-# for dataset_name, dataset in all_datasets.items():
-    # print("Dataset:", dataset_name)
-    # print(df_info(dataset))
-    # print("\n" + "="*50 + "\n")
+for dataset_name, dataset in all_datasets.items():
+    print("Dataset:", dataset_name)
+    print(df_info(dataset))
+    print("\n" + "="*50 + "\n")
 
 
 def change_datatype(data_frame, col_name, modified_datatype):
@@ -875,36 +884,42 @@ arrestee_age = change_datatype(arrestee_age, 'arrestees', int)
 arrestee_race = change_datatype(arrestee_race, 'arrestees', int)
 arrestee_sex = change_datatype(arrestee_sex, 'arrestees', int)
 
-offenses_time = change_datatype(offenses_time, 'sex_offenses', int)
-
 national_rape_trend = change_datatype(national_rape_trend, 'rape_incidents', int)
 national_rape_trend = change_datatype(national_rape_trend, 'years', int)
 
 merged_offenders = change_datatype(merged_offenders, 'offender_id', object)
 merged_offenders = change_datatype(merged_offenders, 'incident_id', object)
 
-#for dataset_name, dataset in all_datasets.items():
-    #print("Dataset:", dataset_name)
-    #print(df_info(dataset))
-    #print("\n" + "="*50 + "\n")
+for dataset_name, dataset in all_datasets.items():
+    print("Dataset:", dataset_name)
+    print(df_info(dataset))
+    print("\n" + "="*50 + "\n")
 
 """Identifying Missing Values"""
+
+"""
+    As shown below - no missing values found for any variables in any of the datasets with the exception of
+    age_num column where the missing values are shown as 'NS'. Therefore, first, we will redefine 'NS'
+    as NaN and then change the dtype of this column to numeric i.e., float. Then, we will examine if there
+    are outliers present. If the presence of outliers is detected, then the missing values will be
+    replaced by the median, otherwise the mean.
+"""
 
 # missing values as 'NS' convert them to NaN and impute them
 merged_offenders['age_num'] = merged_offenders['age_num'].replace('NS', np.nan)
 
 # detecting missing values
-#for dataset_name, dataset in all_datasets.items():
-    #print("Dataset:", dataset_name)
-    #print("Total Missing Values:", missing_values(dataset))
-    #print("-"*50)
+for dataset_name, dataset in all_datasets.items():
+    print("Dataset:", dataset_name)
+    print("Total Missing Values:", missing_values(dataset))
+    print("-"*50)
 
 """Now, we can see that there are 169 missing values in the merged_offenders df.
 Therefore, we'll take a closer look."""
 
 merged_offenders.isna().sum()
 
-# changing dtype from object to float to visualize distribution of age
+# changing dtype from object to float for age
 merged_offenders = change_datatype(merged_offenders, 'age_num', float)
 
 """Since there are outliers present, we want to replace the missing
@@ -912,21 +927,27 @@ values in this column with the median."""
 
 # replacing the missing values with the median for age num column
 merged_offenders['age_num'] = merged_offenders['age_num'].fillna(merged_offenders['age_num'].median())
-
-# print(merged_offenders.isna().sum())
+"""Now, we can see that there are no missing values in this dataset."""
 ```
 
 # Analysis
 
-The analysis for the varying patterns in sex offenses is divided up into several distinct parts: overview of sex offense dynamics, geographic analysis, temporal analysis, demographic analysis, relational analysis, and a case study. 
+The analysis of the varying patterns in sex offenses is divided into several distinct parts. Below are some of the aspects this study aims to decipher throughout each section:
 
-It should be emphasized that this analysis is conducted while keeping in mind the discrepancies in population densities, youth concentration, economic conditions, cultural factors, effectiveness of law enforcement agencies, crime reporting practices etc., as these factors vary from place to place.
+- **Overview of Sex Offense Dynamics** (@sec-overview)**:** Are there any disparities observed between the total number of victims compared to the total number of individuals arrested?
+- **Geographic Analysis** (@sec-geoanalysis)**:** How do rape incidents fluctuate across different regions - including states and counties - in the United States?
+- **Temporal Analysis** (@sec-tempanalysis)**:** What causes deviations in rape rates over time (2012-2022) on a national level?
+- **Demographic Analysis** (@sec-demoganalysis)**:** Does the demographic information (age, race, and sex) vary for victims vs. arrestees?
+- **Relational Analysis** (@sec-relanalysis)**:** Do relationships exist between victims and perpetrators of sex offenses?
+- **Case Study** (@sec-casestudy)**:** Do seasonal trends in rape incidents exist across NY state in 2022?
 
-## Overview: Sex Offense Dynamics
+It should be emphasized that this analysis is conducted while keeping in mind the discrepancies in population densities, youth concentration, economic conditions, cultural factors, the effectiveness of law enforcement agencies, crime reporting practices, etc., as these factors vary from place to place.
+
+## Overview: Sex Offense Dynamics {#sec-overview}
 
 ```{python}
 #| label: Fig-1
-#| fig-cap: "Victims vs. Arrests & Completed vs. Arrested"
+#| fig-cap: "Victims vs. Arrests & Completed vs. Arrested Statistics (2022)"
 #| warning: false
 
 # extracting relevant data
@@ -967,9 +988,9 @@ plt.show()
 
 @Fig-1 above elaborates on the discrepancy between the number of victims and arrestees as well as the number of attempted and completed sex offenses. As per the figure, there are significantly more victims than arrestees for sex offenses and most perpetrators are able to complete the sexual assault. This highlights the complexity of sexual violence dynamics that are being investigated in the next stages of the study.  
 
-## Geographic Analysis
+## Geographic Analysis {#sec-geoanalysis}
 
-Firstly, to gain a better understanding of how sex offenses vary from state to state, a choropleth map is drawn.
+The first stage of the geographic analysis includes the examination of regional trends by observing how rape incidents fluctuate from state to state. 
 
 ::: {.callout-tip}
 ## To Read Fig 2.
@@ -984,9 +1005,13 @@ import plotly.io as pio
 
 ```{python}
 #| label: Fig-2
-#| fig-cap: "Sex Offenses Per Capita by State"
+#| fig-cap: "Sex Offenses Per Capita by State for 2022"
 #| warning: false
 
+# ---------------------------------------------------------
+# Source: RCNJ DATA-301-01: Data Analysis & Visualization (Spring 2023)
+# the code below is extracted from the homeworks, labs, and assignments from DATA-301
+# START citation
 # adding a new column for per capita sex offenses
 offense_by_state['per_capita_sex_off'] = offense_by_state['sex_offenses'] / offense_by_state['population_covered']
 
@@ -1008,25 +1033,31 @@ fig.update_layout(width=750, height=600, coloraxis_colorbar=dict(len=0.6),
 
 # setting county border color and width
 fig.update_traces(marker_line_color='white', marker_line_width=1.0)
+
 fig.show()
+# END citation
+# ---------------------------------------------------------
 ```
 
-Based on @Fig-2 above, regional discrepancies are displayed as western states such as Alaska, Montana, and Utah had the highest sex offenses per capita, while southern states such as Florida and Alabama had the lowest sex offenses per capita. It can also be noted that, with the exception of New Hampshire, the East coast had relatively less sex offenses per capita in comparison to states across the West coast. 
+Based on @Fig-2 above, regional discrepancies are displayed as western states such as Alaska, Montana, and Utah had the highest sex offenses per capita, while southern states such as Florida and Alabama had the lowest sex offenses per capita. It can also be noted that except for New Hampshire, the East Coast had relatively fewer sex offenses per capita in comparison to states across the West Coast. 
 
-Next, in order to analyze the distribution of sex offenses within states, @Fig-3 shows reported sex offenses by counties. It is important to note that the datapoints do not reflect county totals but are the number of offenses reported by the sheriff's office or county police department.
+Next, to analyze the distribution of sex offenses within states, @Fig-3 shows reported sex offenses by counties. It is important to note that the data points do not reflect county totals but are the number of offenses reported by the sheriff's office or county police department.
 
 ::: {.callout-tip}
 ## To Read Fig 3.
 The map displays reported sex offenses by counties across the United States in 2022. The darker colors represent counties with higher rates of reported sex offenses while the lighter colors represent counties with lower rates of reported sex offenses. Meanwhile, the grey areas represent counties where the sex offense data wasn’t available. 
 
-Due to the majority of counties having relatively low reported sex offense cases, this map incorporated a logarithmic scale where the actual figures of sex offenses were compressed between 0.00e+0 and 3.00e+0. 
+Due to the majority of counties having relatively low reported sex offense cases, this map incorporated a logarithmic scale where the actual figures of sex offenses were compressed between 0.0 and 3.0. 
 :::
 
 ```{python}
 #| label: Fig-3
-#| fig-cap: "Sex Offenses Per Capita by County"
+#| fig-cap: "Sex Offenses by U.S. Counties for 2022"
 #| warning: false
 
+# ---------------------------------------------------------
+# source for plotting counties plot: https://plotly.com/python/mapbox-county-choropleth/
+# START citation
 from urllib.request import urlopen
 import json
 with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
@@ -1050,25 +1081,34 @@ choro_counties_fig = px.choropleth(county_offenses_clean,
     scope='usa'
 )
 
-choro_counties_fig.update_layout(width=750, height=600, coloraxis_colorbar=dict(len=0.6),
-                  margin=dict(l=0, r=0, t=0, b=0))
+# END citation
+# ---------------------------------------------------------
 
-# converting colorscale to scientific e notation
-choro_counties_fig.update_layout(coloraxis_colorbar=dict(tickformat='.2e'))
-        
+# ---------------------------------------------------------
+# START CITATION
+# source for formatting ticks: https://plotly.com/python/tick-formatting/
+# source for editing colorbar: https://plotly.com/python/reference/layout/coloraxis/
+choro_counties_fig.update_layout(width=750, height=600, coloraxis_colorbar=dict(len=0.6,
+                  tickvals=[0, 0.5, 1, 1.5, 2, 2.5, 3],
+                  ticktext=["0.0", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0"]),
+                  margin=dict(l=0, r=0, t=0, b=0))
+# END citation
+# ---------------------------------------------------------
+
 # setting county border color and width
-choro_counties_fig.update_traces(marker_line_color='white', marker_line_width=1.0)
+choro_counties_fig.update_traces(marker_line_color='white', marker_line_width=0.1)
 
 choro_counties_fig.show()
+
 ```
 
-The distribution of reported sex offenses across U.S. counties from @Fig-3 display that Harris County, Texas and Orange County, Florida had the highest number of reported sex offenses in 2022. It is also noticeable that a large number of counties across the west coast and in southern states generally appear to display relatively high counts of reported sex offenses. This highlights potential areas of concern for law enforcement and sexual violence prevention initiatives. 
+The distribution of reported sex offenses across U.S. counties from @Fig-3 displays that Harris County, Texas, and Orange County, Florida had the highest number of reported sex offenses in 2022. It is also noticeable that a large number of counties across the West Coast and in southern states generally appear to display relatively high counts of reported sex offenses. This highlights potential areas of concern for law enforcement and sexual violence prevention initiatives. 
 
-On the other hand, there appear to be many counties scattered across the mid-west where there are very low numbers of reported sexual offenses. The underlying factors behind these low figures remain unclear and may potentially stem from more readily available resources for sexual assault prevention and awareness or from fewer individuals reporting the crime in the area. Nonetheless, the causes can only be determined through further analysis, as it is difficult to draw conclusions from this map due to limited data available from some states. 
+On the other hand, there appear to be many counties scattered across the mid-west where there are very low numbers of reported sexual offenses. The underlying factors behind these low figures remain unclear and may potentially stem from more readily available resources for sexual assault prevention and awareness or fewer individuals reporting the crime in the area. Nonetheless, the causes can only be determined through further analysis, as it is difficult to draw conclusions from this map due to limited data available from some states. 
 
-## Temporal Analysis
+## Temporal Analysis {#sec-tempanalysis}
 
-This section of the study examines the variation in rape cases across different time periods in the U.S. Firstly, trends in rape incidents in the U.S. are observed between a time-period of 2012-2022. This is depicted in the Fig 4. below:
+This section of the study examines the variation in rape cases across different time periods in the U.S. Firstly, trends in rape incidents in the U.S. are observed between a time period of 2012-2022. This is depicted in the Fig 4. below:
 
 ```{python}
 #| label: Fig-4
@@ -1093,15 +1133,15 @@ plt.tight_layout()
 plt.show()
 ```
 
-From @Fig-4, it can be deduced that the year 2012 had the lowest number of rape incidents whereas 2016 had the highest number of rape incidents. This nationwide trend shows rape incidents rapidly increasing by 129.97% from approximately 85,141 rape cases in 2012 to 195,804 rape cases in 2013. This significant increase was due to a change in legal definition of rape by the FBI in 2013 – as describe in the Legal Definitions @tip-legal-definitions section. 
+From @Fig-4, it can be deduced that the year 2012 had the lowest number of rape incidents whereas 2016 had the highest number of rape incidents. This nationwide trend shows rape incidents rapidly increasing by 129.97% from approximately 85,141 rape cases in 2012 to 195,804 rape cases in 2013. This significant increase was due to a change in the legal definition of rape by the FBI in 2013 – as described in the Legal Definitions (@tip-legal-definitions) section. 
 
-The figures steadily rose until 2016 (229,384 rape case), during which rape incidents reached an all-time high between 2012-2022. There was a sharp decline from 2016 to 2017 by approximately 40.86%, after which the rape incidents fluctuated. For the year with the most recent data available, i.e., 2022 (133,294 rape cases), it is observed that although the number of rape incidents are still higher than they were ten years ago in 2012, they still, however, remain lower than they were in 2016.  
+The figures steadily rose until 2016 (229,384 rape cases), during which rape incidents reached an all-time high between 2012-2022. There was a sharp decline from 2016 to 2017 by approximately 40.86%, after which the rape incidents fluctuated. For the year with the most recent data available, i.e., 2022 (133,294 rape cases), it is observed that although the number of rape incidents was still higher than ten years ago in 2012, they still, however, remain lower than they were in 2016.  
 
-It is important to acknowledge that the fluctuations of rape incidents from 2016-2017 may be attributed to the fact that this was a tumultuous time period for women rights movements. For instance, the #MeToo movement gained momentum due to reports of sexual abuse by Hollywood producer Harvey Weinstein. Moreover, the highly publicized case of People v. Turner, brought national attention and outrage towards the cracks within the U.S. justice system regarding punishing the perpetrators [@pvbrock]. 
+It is important to acknowledge that the fluctuations of rape incidents from 2016-2017 may be attributed to the fact that this was a tumultuous time for women's rights movements. For instance, the #MeToo movement united women across the nation due to reports of sexual abuse by Hollywood producer [Harvey Weinstein](https://abcnews.go.com/US/timeline-harvey-weinsteins-path-york-city-rape-sexual/story?id=67708458) and other powerful individuals. Moreover, the highly publicized case of [People v. Turner](https://harvardlawreview.org/print/vol-132/california-judge-recalled-for-sentence-in-sexual-assault-case/), brought national attention and outrage towards the cracks within the U.S. justice system regarding punishing the perpetrators. 
 
-These social movements and high profile court cases have the ability to implement social changes and at the very least, bring awareness towards an issue, and the fluctuations of rape incidents in 2016-2017 serve as an indicator regarding a shift in public discourse surrounding sexual violence. 
+These social movements and high-profile court cases have the ability to implement societal changes and at the very least, bring awareness towards an issue, and the fluctuations of rape incidents in 2016-2017 serve as an indicator regarding a shift in public discourse surrounding sexual violence. 
 
-## Demographic Analysis
+## Demographic Analysis {#sec-demoganalysis}
 
 This section deals with inspecting the demographic information such as age, race, and sex of both victims and arrestees of sexual assault – as depicted in @Fig-5 and @Fig-6.
 
@@ -1132,7 +1172,7 @@ plt.legend()
 plt.show()
 ```
 
-By looking at the age ranges of victims and arrestees, it is noticeable that, overall, there were a greater number of victims compared to the individuals arrested in 2022. A majority of the victims belonged in the younger age ranges (< 20 years old). This high figure is substantiated by the following statistics from the Center For Disease Control (CDC), who state that, “More than 5 in 6 female rape survivors reported that they were first raped before age 25 and almost half were first raped as a minor (i.e., before age 18). Nearly 8 in 10 male rape survivors reported that they were made to penetrate someone before age 25 and about 4 in 10 were first made to penetrate as a minor” [@cdcages]. Meanwhile, the number of arrestees were approximately similar across all age categories.
+By looking at the age ranges of victims and arrestees, it is noticeable that, overall, there were a greater number of victims compared to the individuals arrested in 2022. A majority of the victims belonged to the younger age ranges (< 20 years old). This high figure is substantiated by the following statistics from the *[Center For Disease Control](https://www.cdc.gov/violenceprevention/sexualviolence/fastfact.html#:~:text=More%20than%204%20in%205,to%20penetrate%20as%20a%20minor)* (CDC), who state that, “More than 5 in 6 female rape survivors reported that they were first raped before age 25 and almost half were first raped as a minor (i.e., before age 18). Nearly 8 in 10 male rape survivors reported that they were made to penetrate someone before age 25 and about 4 in 10 were first made to penetrate as a minor.” Meanwhile, the number of arrestees were approximately similar across all age categories.
 
 ```{python}
 #| label: Fig-6
@@ -1147,7 +1187,18 @@ vic_arr_race['arrestees'] = arrestee_race['arrestees']
 vic_arr_sex = victim_sex[['sex', 'victims']].copy()
 vic_arr_sex['arrestees'] = arrestee_sex['arrestees']
 
+# replacing missing values i.e., unknown race
+vic_arr_race['race'].replace('Unknown_Race', np.nan, inplace=True)
+vic_arr_race['race'].fillna(vic_arr_race['race'].mode(dropna=True).iloc[0], inplace=True)
+
+# aggregating duplicated values created after replacing Nan with mode for vic_arr_race
+vic_arr_race = vic_arr_race.groupby('race').sum().reset_index()
+
 # creating heatmap for victims and arrestees by Race
+
+# ---------------------------------------------------------
+# Source for mapping: https://www.geeksforgeeks.org/mapping-external-values-to-dataframe-values-in-pandas/
+# START citation
 # creating dict to modify names in race col
 race_dict = {
     'White': 'White',
@@ -1159,6 +1210,8 @@ race_dict = {
 
 # replacing race names with names in race dictionary
 vic_arr_race['race'] = vic_arr_race['race'].map(race_dict)
+# END citation
+# ---------------------------------------------------------
 
 # color palette using cubehelix_palette
 cubehelix_colors = sb.cubehelix_palette(as_cmap = True)
@@ -1174,16 +1227,17 @@ plt.title('Heatmap of Victims and Arrestees by Race', fontsize = 10)
 plt.xlabel('Category', fontsize = 10)
 plt.ylabel('Race', fontsize = 10)
 
-
-
 # adjusting space between subplots to avoid overlapping
 plt.subplots_adjust(wspace=0.5)
 
 # creating the second heatmap for victims and arrestees by Sex
 plt.subplot(1, 2, 2)
 
+# ---------------------------------------------------------
 # creating heatmap for victims and arrestees by Sex
 # creating dict to modify names in sex col
+# source for mapping: https://www.geeksforgeeks.org/mapping-external-values-to-dataframe-values-in-pandas/
+# START citation
 sex_dict = {
     'Male': 'Male',
     'Female': 'Female',
@@ -1192,6 +1246,8 @@ sex_dict = {
 
 # replacing race names with names in sex dictionary
 vic_arr_sex['sex'] = vic_arr_sex['sex'].map(sex_dict)
+# END citation
+# ---------------------------------------------------------
 
 sb.heatmap(vic_arr_sex.pivot_table(index='sex', values=['victims', 'arrestees'],
                                     aggfunc='sum'),
@@ -1200,26 +1256,26 @@ sb.heatmap(vic_arr_sex.pivot_table(index='sex', values=['victims', 'arrestees'],
 plt.title('Heatmap of Victims and Arrestees by Sex', fontsize = 10)
 plt.xlabel('Category', fontsize = 10)
 plt.ylabel('Sex', fontsize = 10)
-#plt.savefig("q4b2-450.png")
 plt.show()
 ```
 
-@Fig-6 above, depicts the number of victims and arrestees by race and sex. In terms of race, white Americans had the highest number of victims (145,906) and arrestees (18,562), followed by African Americans, while Pacific Islanders had the lowest number of victims (546) and arrestees (126). 
-
-It is important to also consider that these numbers may be somewhat distorted due to individuals from certain cultures coming under societal and familial pressures to not report sexual assault as a result of the deep-seated honor and shame ideologies. Such cultural dynamics can lead to underreporting the victims and arrestees of sexual offenses. 
+@Fig-6 above depicts the number of victims and arrestees by race and sex. In terms of race, white Americans had the highest number of victims (145,906) and arrestees (18,562), followed by African Americans, while Pacific Islanders had the lowest number of victims (546) and arrestees (126). 
 
 Meanwhile, in terms of sex, the data reveals a gender imbalance as the number of female victims (176,157) far exceeded the number of male victims (27,235), while most of the individuals arrested for sex offenses were males (26,171). This highlights the disproportionate impact of sexual violence on women.  
 
-## Relational Analysis
+## Relational Analysis {#sec-relanalysis}
 
 This section aims to assess the relationships between victims and offenders and the specific location where the sex offense took place. 
 
 ```{python}
 #| label: Fig-7
-#| fig-cap: "Relationship Between Victims and Offenders"
+#| fig-cap: "Relationship Between Victims and Offenders (2022)"
 #| warning: false
 
+# ---------------------------------------------------------
 # creating dict to modify relationships in relationship col
+# source for mapping: https://www.geeksforgeeks.org/mapping-external-values-to-dataframe-values-in-pandas/
+# START citation
 rel_dict = {
     'family_member': 'Family Member',
     'family_member_and_other': 'Family Member and Other',
@@ -1230,12 +1286,17 @@ rel_dict = {
 
 # applying dict to relationship column through .map()
 vic_offen_relationship['relationship'] = vic_offen_relationship['relationship'].map(rel_dict)
+# END citation
+# ---------------------------------------------------------
 
 plt.figure(figsize=(8, 6))
 
 # color selection
 custom_colors = ['plum', 'lavender', 'lightsteelblue', 'steelblue', 'mediumpurple']
 
+# ---------------------------------------------------------
+# Source for labelling pie chart: https://matplotlib.org/stable/gallery/pie_and_polar_charts/pie_and_donut_labels.html
+# START citation
 # creating pie chart - including adding percentages and changing distances
 wedges, texts, autotexts = plt.pie(vic_offen_relationship['sex_offenses'],
         labels=vic_offen_relationship['relationship'],
@@ -1243,6 +1304,8 @@ wedges, texts, autotexts = plt.pie(vic_offen_relationship['sex_offenses'],
         startangle=90, colors=custom_colors,
         wedgeprops=dict(width=0.4, edgecolor='white'), textprops={'fontsize': 8},
         labeldistance=1.1, pctdistance=0.40)
+# END citation
+# ---------------------------------------------------------
 
 # adding legend
 plt.legend(wedges, vic_offen_relationship['relationship'], title="Relationship",
@@ -1253,13 +1316,17 @@ plt.show()
 
 ```{python}
 #| label: Fig-8
-#| fig-cap: "Sex Offenses By Location"
+#| fig-cap: "Sex Offenses By Location (2022)"
 #| warning: false
 
 # creating dict for specific locations + freq of sex offenses in each location
 wordcloud_loc_dict = crime_location.set_index('location')['sex_offenses'].to_dict()
 
+# ---------------------------------------------------------
 # creating wordcloud
+# source for creating wordcloud: https://shreehar01.github.io/Analysis-of-Global-Terrorism/doc/blog.html 
+# START citation
+# located under 'Terrorism in US' section
 wordcloud_loc = WordCloud(width=1000,
                           height=800,
                           background_color='white',
@@ -1273,13 +1340,15 @@ plt.imshow(wordcloud_loc, interpolation='bilinear')
 plt.axis('off')
 plt.tight_layout(pad = 4)
 plt.show()
+# END citation
+# ---------------------------------------------------------
 ```
 
-@Fig-7 and @Fig-8 show that 79.88% of the sex offenders were either a family member of the victim or were known to the victim, while only 7.16% were strangers. This figure coincided with the observation that sex offenses commonly occurred at residence/home. 
+@Fig-7 and @Fig-8 show that 79.88% of the sex offenders were either a family member of the victim or were known to the victim, while only 7.16% were strangers. This figure coincided with the observation that sex offenses commonly occurred at the residence/home. 
 
-Moreover, @Fig-8 indicates that one of the locations where sexual offenses commonly take place are in secondary or elementary school. This supports the data from @Fig-5 which indicated that most sex offense victims belonged in the younger age categories. 
+Moreover, @Fig-8 indicates that one of the locations where sexual offenses commonly take place is in secondary or elementary school. This supports the data from @Fig-5 which indicates that most sex offense victims belonged to the younger age categories. 
 
-## Case Study: Seasonal Trends In Sex Offenses For New York
+## Case Study: Seasonal Trends In Sex Offenses For New York {#sec-casestudy}
 
 ```{python}
 #| label: Fig-9
@@ -1297,18 +1366,23 @@ sex_off_date_vals = removed_na.groupby(['incident_date']).size().reset_index(nam
 # setting the incident_date column as index
 sex_off_date_vals.set_index('incident_date', inplace=True)
 
+# ---------------------------------------------------------
 # calendar heatmap using calplot
+# source for calander heatmap: https://calplot.readthedocs.io/en/latest/
+# START citation
 calplot.calplot(sex_off_date_vals['sex_offenses_count'], cmap='PuRd', colorbar=True)
 plt.show()
+# END citation
+# ---------------------------------------------------------
 ```
 
 Seasonal trends in @Fig-9 show that summer/early fall months (May, June, and September) had the highest reported sex offenses, while winter months (January, November, and December) had the lowest reported sex offenses in New York.
 
-Furthermore, the highest number of sex offenses took place on Saturdays – approximately 306 – while the lowest sex offenses took place on Sundays – approximately 259. This indicates a relatively minor disparity in sex offense rates. In fact, the National Institute of Justice claims that, “More than half of the sexual assaults took place on weekends” [@strends]
+Furthermore, the highest number of sex offenses took place on Saturdays – approximately 306 – while the lowest number of sex offenses took place on Sundays – approximately 259. This indicates a relatively minor disparity in sex offense rates. In fact, the *[National Institute of Justice](https://nij.ojp.gov/topics/articles/factors-increase-sexual-assault-risk)* (NIJ) claims that “More than half of the sexual assaults took place on weekends.”
 
 # Modelling: Completed vs. Attempted Sex Offenses
 
-Supervised learning algorithms were utilized to examine the binary classification problem of determining what factors (age, sex, location, and weapons) influenced whether a sex offense was completed or attempted in New York. Classification models such as logistic regression, decision trees, random forests, and support vector machine (SVM) were trained, tested and finetuned based to reduce overfitting. 
+Supervised learning algorithms were utilized to examine the binary classification problem of determining what factors (age, sex, location, and weapons) influenced whether a sex offense was completed or attempted in New York. Classification models such as logistic regression, decision trees, random forests, and support vector machine (SVM) were trained, tested, and finetuned to reduce overfitting. 
 
 ```{python, warning=FALSE}
 #| output: false
@@ -1328,9 +1402,14 @@ mod_offenders_df = merged_offenders.drop(columns=irrelevant_cols_mod)
 # making offender_id the index
 mod_offenders_df = mod_offenders_df.set_index('offender_id')
 
+# ---------------------------------------------------------
 # manually mapping categories in sex_code col
+# source for mapping: https://www.geeksforgeeks.org/mapping-external-values-to-dataframe-values-in-pandas/
+# START citation
 sex_dict_unq = {'M': 'Male', 'F': 'Female', 'U': 'Unknown', 'X': 'Nonbinary'}
 mod_offenders_df['sex_code'] = mod_offenders_df['sex_code'].map(sex_dict_unq)
+# END citation
+# ---------------------------------------------------------
 
 # identifying and replacing unknown values in weapon_name col with mode
 mod_offenders_df['weapon_name'].replace('Unknown', np.nan, inplace=True)
@@ -1373,13 +1452,18 @@ from imblearn.pipeline import Pipeline
 X = mod_offenders_df.drop('attempt_complete_flag', axis=1)
 y = mod_offenders_df['attempt_complete_flag']
 
+# ---------------------------------------------------------
 # using SMOTE
-pipeline = Pipeline([
-    ('over', SMOTE(sampling_strategy='auto')),
-])
+# source: https://machinelearningmastery.com/smote-oversampling-for-imbalanced-classification/
+# START citation
+# code found under 'SMOTE for Classification' section
+steps = [('over', SMOTE())]
+pipeline = Pipeline(steps=steps)
 
 # fitting the SMOTE pipeline on the data
 X, y = pipeline.fit_resample(X, y)
+# END citation
+# ---------------------------------------------------------
 
 # examining class imbalance after applying SMOTE
 class_dist_res = pd.Series(y).value_counts()
@@ -1390,8 +1474,13 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 # checking for multicolinearity by calculating VIF
 vif_vals = pd.DataFrame()
 vif_vals["Variable"] = X.columns
+# ---------------------------------------------------------
+# source: https://www.statology.org/how-to-calculate-vif-in-python/
+# START citation
 vif_vals["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
 vif_vals[vif_vals["VIF"] > 10]
+# END citation
+# ---------------------------------------------------------
 
 # removing personal weapons as a feture due to VIF >10
 X = X.drop(columns=["weapon_name_Personal Weapons"])
@@ -1402,6 +1491,10 @@ X
 #| output: false
 #| echo: false
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 # training, validation, and test set using the ratio 5 : 1 : 1
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7142857143, random_state=42)
 X_valid, X_test, y_valid, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
@@ -1443,6 +1536,8 @@ sb.heatmap(cmDT, annot=True, fmt="d", cmap="PiYG", cbar=False, square=True,
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title('Confusion Matrix - Decision Tree')
+# END citation
+# ---------------------------------------------------------
 ```
 
 After successfully executing all the models, importance scores were obtained from the decision tree and random forest models, as shown in @Tbl-1 and @Tbl-2 below.
@@ -1451,19 +1546,30 @@ After successfully executing all the models, importance scores were obtained fro
 #| label: Tbl-1
 #| fig-cap: "Decision Tree Model: Importance Scores"
 
-# getting feature importance scores (top 10) from the decision tree model
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
+# getting feature importance scores (top 5) from the decision tree model
 dt_feature_imp = pd.Series(tree_clf.feature_importances_, index = X_train.columns)
-top_10_dt = dt_feature_imp.nlargest(10)
-top_10_df_df = pd.DataFrame({'Feature': top_10_dt.index, 'Importance Score': top_10_dt.values}).reset_index(drop=True)
-top_10_df_df
+top_5_dt = dt_feature_imp.nlargest(5)
+top_5_df_df = pd.DataFrame({'Feature': top_5_dt.index, 'Importance Score': top_5_dt.values.round(3)})
+top_5_df_df = top_5_df_df.reset_index(drop=True)
+top_5_df_df
+# END citation
+# ---------------------------------------------------------
 ```
 
-From the feature importance scores for the decision tree model in @Tbl-1, it can be deduced that age of an offender, the sex of an offender being male, and the home/residence and unknown place being the location of the crime, plays a significant role in determining the outcome of a sex offense i.e., whether it was completed or attempted. 
+From the feature importance scores for the decision tree model in @Tbl-1, it can be deduced that the age of an offender, the sex of an offender being male, and the home/residence and unknown place being the location of the crime, plays a significant role in determining the outcome of a sex offense i.e., whether it was completed or attempted. 
 
 ```{python warning=FALSE}
 #| output: false
 #| echo: false
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 # random forest classifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
@@ -1478,12 +1584,19 @@ rnd_clf.fit(X_train, y_train)
 y_pred_rf = rnd_clf.predict(X_valid)
 cross_val_scores = cross_val_score(rnd_clf, X_train, y_train, cv=5)
 mean_accuracy = cross_val_scores.mean()
+# END citation
+# ---------------------------------------------------------
 
 # since this model is overfitting, we now apply grid search
 
 from sklearn.model_selection import GridSearchCV
 
 # finding the best combination of hyperparameters
+
+# ---------------------------------------------------------
+# finding the best combination of hyperparameters
+# source for gridsearch: https://www.geeksforgeeks.org/random-forest-hyperparameter-tuning-in-python/
+# START citation
 # setting parameters for grid search
 param_grid = {
     'n_estimators': [50, 100, 150, 200],
@@ -1502,6 +1615,8 @@ print(grid_search.best_params_)
 # making predictions with the improved model by using grid search
 best_rnd_clf = grid_search.best_estimator_
 y_pred_best_rf = best_rnd_clf.predict(X_valid)
+# END citation
+# ---------------------------------------------------------
 
 print("Random Forest Model with Grid Search and Cross Validation:")
 print("Accuracy:", round(accuracy_score(y_valid, y_pred_best_rf), 4))
@@ -1510,6 +1625,10 @@ print("Recall:", round(recall_score(y_valid, y_pred_best_rf), 4))
 print("F1 Score:", round(f1_score(y_valid, y_pred_best_rf), 4))
 print("AUC-ROC Score:", round(roc_auc_score(y_valid, y_pred_best_rf), 4))
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 # getting the confusion matrix for validation set for RF model
 
 cm_RF = confusion_matrix(y_valid, y_pred_best_rf)
@@ -1521,22 +1640,31 @@ sb.heatmap(cm_RF, annot=True, fmt="d", cmap="cool", cbar=False, square=True,
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title('Confusion Matrix - Random Forest')
+# END citation
+# ---------------------------------------------------------
 ```
 
 ```{python, warning=FALSE}
 #| label: Tbl-2
 #| fig-cap: "Random Forest Model: Importance Scores"
 
-# getting feature importance scores (top 10) from the random forest model
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
+# getting feature importance scores (top 5) from the random forest model
 rf_feature_imp = pd.Series(best_rnd_clf.feature_importances_, index = X_train.columns)
-top_10_rf = rf_feature_imp.nlargest(10)
-top_10_rf_df = pd.DataFrame({'Feature': top_10_rf.index, 'Importance Score': top_10_rf.values}).reset_index(drop=True)
-top_10_rf_df
+top_5_rf = rf_feature_imp.nlargest(5)
+top_5_rf_df = pd.DataFrame({'Feature': top_5_rf.index, 'Importance Score': top_5_rf.values.round(3)})
+top_5_rf_df.reset_index(drop=True, inplace=True)
+top_5_rf_df
+# END citation
+# ---------------------------------------------------------
 ```
 
-From the feature importance scores for the random forest model in @Tbl-2, it can be deduced that age of an offender, the sex of an offender being male, and the unknown place and home/residence being the location of the crime, plays a significant role in determining the outcome of a sex offense i.e., whether it was completed or attempted.
+From the feature importance scores for the random forest model in @Tbl-2, it can be deduced that the age of an offender, the sex of an offender being male, and unknown place and home/residence being the location of the crime, plays a significant role in determining the outcome of a sex offense i.e., whether it was completed or attempted.
 
-Both the decision tree and random forest models showing approximately the same features indicates that these features are most influential in predicting the outcome.
+Both the decision tree and random forest models showing approximately the same features indicate that these features are most influential in predicting the outcome.
 
 ```{python, warning=FALSE}
 #| output: false
@@ -1544,6 +1672,10 @@ Both the decision tree and random forest models showing approximately the same f
 
 from sklearn.linear_model import LogisticRegression
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 # applying logistic regression
 logistic_model = LogisticRegression(max_iter=3000, random_state=42, penalty='l2')
 logistic_model.fit(X_train, y_train)
@@ -1655,17 +1787,22 @@ sb.heatmap(svm_conf_matrix, annot=True, fmt="d", cmap="PuBuGn", cbar=False, squa
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title('Confusion Matrix - SVM with RBF Kernel')
+# END citation
+# ---------------------------------------------------------
 ```
 
 ```{python, warning=FALSE}
 #| label: Fig-10
 #| fig-cap: "Receiver Operating Characteristic (ROC) Curve"
 
-# creating roc curve to examine model performance of each model individually
 from sklearn.metrics import roc_curve, roc_auc_score
 
+# ---------------------------------------------------------
+# source for roc_auc_scores: https://www.geeksforgeeks.org/calculate-roc-auc-for-classification-algorithm-such-as-random-forest/
+# START citation
+# creating roc curve to examine model performance of each model individually
 # calculating ROC and AUC for each of the 4 models
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(7, 5))
 
 # decision tree
 y_score_tree = tree_clf.predict_proba(X_valid)[:, 1]
@@ -1684,12 +1821,23 @@ y_score_logreg = logistic_model.predict_proba(X_valid)[:, 1]
 fpr_logreg, tpr_logreg, _ = roc_curve(y_valid, y_score_logreg)
 roc_auc_logreg = roc_auc_score(y_valid, y_score_logreg)
 plt.plot(fpr_logreg, tpr_logreg, label=f'Logistic Regression (AUC = {roc_auc_logreg:.3f})', color="powderblue")
+# END citation
+# ---------------------------------------------------------
 
+# ---------------------------------------------------------
+# SVM
+# source for svm roc_auc_score: https://stackoverflow.com/questions/59227176/how-to-plot-roc-and-calculate-auc-for-binary-classifier-with-no-probabilities-s
+# START citation
 # SVM
 fpr_svm, tpr_svm, _ = roc_curve(y_valid, best_svm_decision_scores)
 roc_auc_svm = roc_auc_score(y_valid, best_svm_decision_scores)
 plt.plot(fpr_svm, tpr_svm, label=f'SVM (AUC = {roc_auc_svm:.3f})', color="thistle")
+# END citation
+# ---------------------------------------------------------
 
+# ---------------------------------------------------------
+# source for plotting roc curves for all models in one plot: https://stackoverflow.com/questions/42894871/how-to-plot-multiple-roc-curves-in-one-plot-with-legend-and-auc-scores-in-python
+# START citation
 # plotting the ROC curve
 plt.plot([0, 1], [0, 1], 'k--')
 plt.xlim([0.0, 1.0])
@@ -1699,12 +1847,18 @@ plt.ylabel('True Positive Rate')
 
 plt.legend(loc="lower right")
 plt.show()
+# END citation
+# ---------------------------------------------------------
 ```
 
 Based on the ROC curve in @Fig-10, the Random Forest model – with an AUC score of 93% – performed the best in terms of determining whether a sex offense was completed or attempted in New York. 
 
 ```{python, warning=FALSE}
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 # ensamble classifier
 from sklearn.ensemble import VotingClassifier
 
@@ -1723,18 +1877,24 @@ y_pred_valid_ensemble = voting_clf.predict(X_valid)
 
 print("Ensemble Model Performance:")
 print("===================================")
-print("Accuracy:", accuracy_score(y_valid, y_pred_valid_ensemble))
-print("Precision:", precision_score(y_valid, y_pred_valid_ensemble))
-print("Recall:", recall_score(y_valid, y_pred_valid_ensemble))
-print("F1 Score:", f1_score(y_valid, y_pred_valid_ensemble))
-print("ROC AUC Score:", roc_auc_score(y_valid, y_pred_valid_ensemble))
+print("Accuracy:", round(accuracy_score(y_valid, y_pred_valid_ensemble), 4))
+print("Precision:", round(precision_score(y_valid, y_pred_valid_ensemble), 4))
+print("Recall:", round(recall_score(y_valid, y_pred_valid_ensemble), 4))
+print("F1 Score:", round(f1_score(y_valid, y_pred_valid_ensemble), 4))
+print("ROC AUC Score:", round(roc_auc_score(y_valid, y_pred_valid_ensemble), 4 ))
 print("===================================")
+# END citation
+# ---------------------------------------------------------
 ```
 
 ```{python}
 #| output: false
 #| echo: false
 
+# ---------------------------------------------------------
+# Source: RCNJ CMPS-320-01: Machine Learning Course (Fall 2023)
+# the code below is extracted from the homeworks, labs, and assignments from CMPS-320
+# START citation
 # confusion matrix for ensemble model
 ensemble_conf_matrix = confusion_matrix(y_valid, y_pred_valid_ensemble)
 
@@ -1746,6 +1906,8 @@ plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title('Confusion Matrix - SVM with RBF Kernel')
 plt.show()
+# END citation
+# ---------------------------------------------------------
 ```
 
 The last part of modelling consisted of creating a soft-voting ensemble. Based on the evaluation metrics of this classifier, the model appears to be performing well and there seems to be a good balance between precision and recall. 
@@ -1754,8 +1916,8 @@ The last part of modelling consisted of creating a soft-voting ensemble. Based o
 
 This research investigated the pivotal aspects that influenced rape rates in 2022 across distinct regions, communities, and demographics by analyzing geographic, temporal, demographic, and relational factors. The findings of this study highlighted how women and individuals in younger age groups were disproportionately affected by sexual violence. Moreover, familial relationships played a role in offense dynamics as most victims had some relationship with their offender. 
 
-On the other hand, modelling efforts revelated some significant features that influenced the outcome of whether a sex offense was completed or attempted. Lastly, while geographic analysis uncovered certain regional trends, however, it was inconclusive in the study to determine why some areas had high sex offenses while others had low sex offenses.
+On the other hand, modeling efforts revealed some significant features that influenced the outcome of whether a sex offense was completed or attempted. Lastly, while geographic analysis uncovered certain regional trends, however, it was inconclusive in the study to determine why some areas had high sex offenses while others had low sex offenses.
 
-Consequently, future research may include examining cultural and societal influences on sex crime reporting rates. All in all, it is important to keep the momentum going in bringing awareness to this issue in order to eliminate victim blaming stigma and encouraging victims to speak out against the perpetrators.
+Consequently, future research may include examining cultural and societal influences on sex crime reporting rates. All in all, it is crucial to foster a safe environment for victims through developing new and improving old support mechanisms, and encouraging victims to speak out against the perpetrators.
 
 # References

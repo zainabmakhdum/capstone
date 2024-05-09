@@ -116,6 +116,9 @@ convert_cols_to_lower_and_snake_case(offense_by_state)
 # resetting index
 offense_by_state.reset_index(drop=True, inplace=True)
 
+# ---------------------------------------------------------
+# source for state codes: https://www.faa.gov/air_traffic/publications/atpubs/cnt_html/appendix_a.html
+# START citation
 code = {'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
         'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'District of Columbia': 'DC',
         'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL',
@@ -127,6 +130,8 @@ code = {'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'Cal
         'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX',
         'Utah': 'UT', 'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
         'Wisconsin': 'WI', 'Wyoming': 'WY'}
+# END citation
+# ---------------------------------------------------------
 
 offense_by_state['Code'] = offense_by_state['state'].map(code)
 offense_by_state.head()
@@ -194,7 +199,13 @@ lines = response.text.split('\n')[7:]
 # this is the first dataframe
 lines = lines[7:60]
 n_lines = '\n'.join(lines)
+# ---------------------------------------------------------
+# source for using IO objects: https://www.geeksforgeeks.org/stringio-module-in-python/ 
+# START citation
+# treating each state as a seperate file
 state_fips = pd.read_fwf(StringIO(n_lines), header=0)
+# END citation
+# ---------------------------------------------------------
 
 # removing first row
 state_fips = state_fips.iloc[1:]
@@ -904,6 +915,10 @@ How do rape rates differ across different states and counties in 2022?"""
 # adding a new column for per capita sex offenses
 offense_by_state['per_capita_sex_off'] = offense_by_state['sex_offenses'] / offense_by_state['population_covered']
 
+# ---------------------------------------------------------
+# Source: RCNJ DATA-301-01: Data Analysis & Visualization (Spring 2023)
+# the code below is extracted from the homeworks, labs, and assignments from DATA-301
+# START citation
 fig = px.choropleth(offense_by_state,
                     locations="Code",
                     locationmode="USA-states",
@@ -920,6 +935,8 @@ fig = px.choropleth(offense_by_state,
 # setting county border color and width
 fig.update_traces(marker_line_color='white', marker_line_width=1.0)
 fig.show()
+# END citation
+# ---------------------------------------------------------
 
 # ---------------------------------------------------------
 # source for plotting counties plot: https://plotly.com/python/mapbox-county-choropleth/
@@ -950,14 +967,21 @@ choro_counties_fig = px.choropleth(county_offenses_clean,
 # END citation
 # ---------------------------------------------------------
 
-# adjusting title placement to make it visible
-choro_counties_fig.update_layout(title_x=0.5, title_y=0.90)
+# ---------------------------------------------------------
+# START CITATION
+# source for formatting ticks: https://plotly.com/python/tick-formatting/
+choro_counties_fig.update_layout(width=750, height=600, coloraxis_colorbar=dict(len=0.6,
+                  tickvals=[0, 0.5, 1, 1.5, 2, 2.5, 3],
+                  ticktext=["0.0", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0"]),
+                  margin=dict(l=0, r=0, t=0, b=0))
+# END citation
+# ---------------------------------------------------------
 
 # converting colorscale to scientific e notation
-choro_counties_fig.update_layout(coloraxis_colorbar=dict(tickformat='.2e'))
+# choro_counties_fig.update_layout(coloraxis_colorbar=dict(tickformat='.2e'))
         
 # setting county border color and width
-choro_counties_fig.update_traces(marker_line_color='white', marker_line_width=1.0)
+choro_counties_fig.update_traces(marker_line_color='white', marker_line_width=0.1)
 
 choro_counties_fig.show()
 
@@ -1012,6 +1036,13 @@ vic_arr_race['arrestees'] = arrestee_race['arrestees']
 # combining victims and arrestees by sex
 vic_arr_sex = victim_sex[['sex', 'victims']].copy()
 vic_arr_sex['arrestees'] = arrestee_sex['arrestees']
+
+# replacing missing values i.e., unknown race
+vic_arr_race['race'].replace('Unknown_Race', np.nan, inplace=True)
+vic_arr_race['race'].fillna(vic_arr_race['race'].mode(dropna=True).iloc[0], inplace=True)
+
+# aggregating duplicated values created after replacing Nan with mode for vic_arr_race
+vic_arr_race = vic_arr_race.groupby('race').sum().reset_index()
 
 # creating heatmap for victims and arrestees by Race
 
@@ -1116,6 +1147,8 @@ wedges, texts, autotexts = plt.pie(vic_offen_relationship['sex_offenses'],
         startangle=90, colors=custom_colors,
         wedgeprops=dict(width=0.4, edgecolor='white'), textprops={'fontsize': 10},
         labeldistance=1.1, pctdistance=0.40)
+# END citation
+# ---------------------------------------------------------
 
 plt.title('Relationship Between Victims and Offenders (2022)', fontsize=10)
 
@@ -1124,8 +1157,7 @@ plt.legend(wedges, vic_offen_relationship['relationship'], title="Relationship",
            loc="right", bbox_to_anchor=(1, 0, 0.5, 1))
 
 plt.show()
-# END citation
-# ---------------------------------------------------------
+
 
 """Question Six:
 What specific locations (home, university, office etc.) are hotspots for
@@ -1327,11 +1359,12 @@ plt.ylabel('Actual')
 plt.title('Confusion Matrix - Decision Tree')
 plt.show()
 
-# getting feature importance scores (top 10) from the decision tree model
+# getting feature importance scores (top 5) from the decision tree model
 dt_feature_imp = pd.Series(tree_clf.feature_importances_, index = X_train.columns)
-top_10_dt = dt_feature_imp.nlargest(10)
-top_10_df_df = pd.DataFrame({'features': top_10_dt.index, 'importance_scores': top_10_dt.values})
-print(top_10_df_df)
+top_5_dt = dt_feature_imp.nlargest(5)
+top_5_df_df = pd.DataFrame({'Feature': top_5_dt.index, 'Importance Score': top_5_dt.values})
+top_5_df_df = top_5_df_df.reset_index(drop=True)
+top_5_df_df
 
 # random forest classifier
 from sklearn.ensemble import RandomForestClassifier
@@ -1372,12 +1405,12 @@ grid_search.fit(X_train, y_train)
 
 # best parameters found using gridsearch
 print(grid_search.best_params_)
-# END citation
-# ---------------------------------------------------------
 
 # making predictions with the improved model by using grid search
 best_rnd_clf = grid_search.best_estimator_
 y_pred_best_rf = best_rnd_clf.predict(X_valid)
+# END citation
+# ---------------------------------------------------------
 
 print("Random Forest Model with Grid Search and Cross Validation:")
 print("Accuracy:", round(accuracy_score(y_valid, y_pred_best_rf), 4))
@@ -1403,11 +1436,12 @@ plt.ylabel('Actual')
 plt.title('Confusion Matrix - Random Forest')
 plt.show()
 
-# getting feature importance scores (top 10) from the random forest model
+# getting feature importance scores (top 5) from the random forest model
 rf_feature_imp = pd.Series(best_rnd_clf.feature_importances_, index = X_train.columns)
-top_10_rf = rf_feature_imp.nlargest(10)
-top_10_rf_df = pd.DataFrame({'feature': top_10_rf.index, 'importance_score': top_10_rf.values})
-top_10_rf_df
+top_5_rf = rf_feature_imp.nlargest(5)
+top_5_rf_df = pd.DataFrame({'Feature': top_5_rf.index, 'Importance Score': top_5_rf.values.round(3)})
+top_5_rf_df.reset_index(drop=True, inplace=True)
+top_5_rf_df
 
 from sklearn.linear_model import LogisticRegression
 
