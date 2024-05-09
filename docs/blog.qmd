@@ -37,11 +37,11 @@ While substantial progress has been made to eliminate the stigmas surrounding th
 
 For this project, the data was obtained from the *Federal Bureau of Investigation* (FBI) through their [Crime Explorer Online Tool](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/home). The FBI utilizes the Uniform Crime Reporting (UCR) Program to collect data from over 18,000 city, county, state, university and college, tribal, and law enforcement agencies. Due to discrepancies in the legal definition of rape, sexual assault, and sexual abuse on a state by state case, it is important to note that certain limitations exist in the data collection for some states. 
 
-Over twenty datasets were extracted via the Python programming language from this database which were comprised of crucial information on the victims by state, the precise location of a sex offense, victim-offender relationship, victim and arrestee demographics (age, race, and sex), etc.
+Approximately nineteen datasets were extracted via the Python programming language from this database which were comprised of crucial information on the victims by state, the precise location of a sex offense, victim-offender relationship, victim and arrestee demographics (age, race, and sex), etc.
 
 # Data Preprocessing
 
-Each of the twenty-one datasets consisted of information on a separate aspect of all criminal activity – including violent and property crime. For instance, one file consisted of crimes categorized by state, while another file consisted of crimes classified by county. Since this research primarily focuses on examining sex offenses, which are categorized under violent crimes, the initial step was to extract data specifically related to this form of criminal activity.
+Each of the nineteen datasets consisted of information on a separate aspect of all criminal activity – including violent and property crime. For instance, one file consisted of crimes categorized by state, while another file consisted of crimes classified by county. Since this research primarily focuses on examining sex offenses, which are categorized under violent crimes, the initial step was to extract data specifically related to this form of criminal activity.
 
 Other steps in data preparation included imputing the missing values based on the median and mode, depending on whether the variable was quantitative or qualitative, as well as changing datatypes and making the column headers easily interpretable and accessible. In the case of offenses by state and county datasets, importing the files yielded missing values due to Excel file formatting issues. Therefore, the best course of action was to replace the missing values based on the nearest non-missing value. Moreover, *Federal Information Processing System* (FIPS) codes were utilized to ensure that the county and state names matched for all observations.
 
@@ -139,7 +139,6 @@ files = [
     "NIBRS_OFFENSE_TYPE.csv",
     "NIBRS_OFFENDER.csv",
     "NIBRS_OFFENSE.csv",
-    "uscities.csv",
     "NIBRS_incident.csv",
     "NIBRS_LOCATION_TYPE.csv",
     "NIBRS_WEAPON_TYPE.csv",
